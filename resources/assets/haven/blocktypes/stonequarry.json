@@ -13,15 +13,78 @@
   creativeinventory: { "general": ["*"] },
   doNotRenderAtLod2: true,
   shape: {
-    base: "game:block/stone/loosestones/free*",
+    base: "game:block/stone/loosestones/free1",
+    overlays: [
+      {
+        base: "block/ashes",
+      }
+    ],
     alternates: [
-      { rotateY: 90 },
-      { rotateY: 180 },
-      { rotateY: 270 }
+      {
+        rotateY: 90,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      },
+      {
+        rotateY: 180,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      },
+      {
+        rotateY: 270,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      },
+      {
+        base: "game:block/stone/loosestones/free2",
+        rotateY: 0,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      },
+      {
+        base: "game:block/stone/loosestones/free2",
+        rotateY: 90,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      },
+      {
+        base: "game:block/stone/loosestones/free2",
+        rotateY: 180,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      },
+      {
+        base: "game:block/stone/loosestones/free2",
+        rotateY: 270,
+        overlays: [
+          {
+            base: "block/ashes",
+          }
+        ],
+      }
     ]
   },
   resistance: 2.4,
   textures: {
+    ashes: {base: "game:block/wood/firepit/ground" },
     rock: {base: "game:block/stone/rock/{rock}1" },
   },
   drawtype: "JSON",

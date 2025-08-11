@@ -1,0 +1,24 @@
+{
+	"editor": {
+		"allAngles": false,
+		"entityTextureMode": false
+	},
+	"textureWidth": 16,
+	"textureHeight": 16,
+	"textureSizes": {
+	},
+	"textures": {
+		"ashes": "game:block/wood/firepit/ground"
+	},
+	"elements": [
+		{
+			"name": "Ashes",
+			"from": [ 1.0, 0.01, 1.0 ],
+			"to": [ 15.0, 0.06, 15.0 ],
+			"renderPass": 2,
+			"rotationOrigin": [ 8.0, 8.0, 8.0 ],
+			"faces": {
+				"up": { "texture": "#ashes", "uv": [ 1.0, 1.0, 15.0, 15.0 ] }
+			}
+		}
+	]}
