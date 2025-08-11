@@ -1,0 +1,42 @@
+{
+  code: "stonequarry",
+  attributes: {
+    handbook: {
+      groupBy: ["stonequarry-*"],
+    }
+  },
+  behaviors: [{name: "UnstableFalling"},],
+  variantgroups: [
+    { code:"rock", states: ["meteorite-iron"], loadFromProperties: "game:block/rockwithdeposit" },
+  ],
+  replaceable: 400,
+  creativeinventory: { "general": ["*"] },
+  doNotRenderAtLod2: true,
+  shape: {
+    base: "game:block/stone/loosestones/free*",
+    alternates: [
+      { rotateY: 90 },
+      { rotateY: 180 },
+      { rotateY: 270 }
+    ]
+  },
+  resistance: 2.4,
+  textures: {
+    rock: {base: "game:block/stone/rock/{rock}1" },
+  },
+  drawtype: "JSON",
+  rainPermeable: true,
+  sidesolid: { all: false },
+  sideopaque: { all: false},
+  sounds: {
+    "walk": "game:walk/stone*"
+  },
+  lightAbsorption: 0,
+  selectionBox: { x1: 0.0625, y1: 0, z1: 0.0625, x2: 0.9375, y2: 0.125, z2: 0.9375 },
+  collisionbox: null,
+  guiTransform: {
+    translation: { x: 0, y: -8, z: 0 },
+    rotation: { x: -22.59375, y: 82, z: 0 },
+    scale: 1.64
+  }
+}
