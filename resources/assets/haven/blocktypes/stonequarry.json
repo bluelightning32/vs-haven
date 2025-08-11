@@ -1,98 +1,145 @@
 {
-  code: "stonequarry",
+  code: "quarry",
   attributes: {
     handbook: {
-      groupBy: ["stonequarry-*"],
+      groupBy: ["quarry-*"],
     }
   },
   behaviors: [{name: "UnstableFalling"},],
   variantgroups: [
-    { code:"rock", states: ["meteorite-iron"], loadFromProperties: "game:block/rockwithdeposit" },
+    { code:"rock", states: ["meteorite-iron", "blueclay", "fireclay"], loadFromProperties: "game:block/rockwithdeposit" },
   ],
   replaceable: 400,
   creativeinventory: { "general": ["*"] },
   doNotRenderAtLod2: true,
-  shape: {
-    base: "game:block/stone/loosestones/free1",
-    overlays: [
-      {
-        base: "block/ashes",
-      }
-    ],
-    alternates: [
-      {
-        rotateY: 90,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      },
-      {
-        rotateY: 180,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      },
-      {
-        rotateY: 270,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      },
-      {
-        base: "game:block/stone/loosestones/free2",
-        rotateY: 0,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      },
-      {
-        base: "game:block/stone/loosestones/free2",
-        rotateY: 90,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      },
-      {
-        base: "game:block/stone/loosestones/free2",
-        rotateY: 180,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      },
-      {
-        base: "game:block/stone/loosestones/free2",
-        rotateY: 270,
-        overlays: [
-          {
-            base: "block/ashes",
-          }
-        ],
-      }
-    ]
+  shapeByType: {
+    "quarry-*clay": {
+      base: "game:item/resource/clayraw",
+      overlays: [
+        {
+          base: "block/ashes",
+        }
+      ],
+      alternates: [
+        {
+          rotateY: 90,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          rotateY: 180,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          rotateY: 270,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+      ]
+    },
+    "*": {
+      base: "game:block/stone/loosestones/free1",
+      overlays: [
+        {
+          base: "block/ashes",
+        }
+      ],
+      alternates: [
+        {
+          rotateY: 90,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          rotateY: 180,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          rotateY: 270,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          base: "game:block/stone/loosestones/free2",
+          rotateY: 0,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          base: "game:block/stone/loosestones/free2",
+          rotateY: 90,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          base: "game:block/stone/loosestones/free2",
+          rotateY: 180,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        },
+        {
+          base: "game:block/stone/loosestones/free2",
+          rotateY: 270,
+          overlays: [
+            {
+              base: "block/ashes",
+            }
+          ],
+        }
+      ]
+    }
   },
   resistance: 2.4,
-  textures: {
-    ashes: {base: "game:block/wood/firepit/ground" },
-    rock: {base: "game:block/stone/rock/{rock}1" },
+  texturesByType: {
+    "quarry-*clay": {
+      ashes: {base: "game:block/wood/firepit/ground" },
+      clay: {base: "game:block/soil/{rock}"},
+    },
+    "*": {
+      ashes: {base: "game:block/wood/firepit/ground" },
+      rock: {base: "game:block/stone/rock/{rock}1" },
+    }
   },
   drawtype: "JSON",
   rainPermeable: true,
   sidesolid: { all: false },
   sideopaque: { all: false},
-  sounds: {
-    "walk": "game:walk/stone*"
+  soundsByType: {
+    "quarry-*clay": {
+      "walk": "game:block/dirt*"
+    },
+    "*": {
+      "walk": "game:walk/stone*"
+    }
   },
   lightAbsorption: 0,
   selectionBox: { x1: 0.0625, y1: 0, z1: 0.0625, x2: 0.9375, y2: 0.125, z2: 0.9375 },
