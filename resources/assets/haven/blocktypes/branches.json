@@ -1,0 +1,81 @@
+{
+  code: "branches",
+  class: "Block",
+  inheritFrom: "game:blocktypes/plant/leaves/branchy.json",
+  attributes: {
+    handbook: {
+      groupBy: ["branches-*"],
+    },
+  },
+  behaviorsByType: {
+    "*": [{ name: "RainDrip" }]
+  },
+  variantgroups: [
+    { code: "wood", states: ["crimsonkingmaple"], loadFromProperties: "block/wood" }
+  ],
+  replaceable: 400,
+  creativeinventory: { "general": ["*"] },
+  shape: {
+    baseByType: {
+      "*-pine": "game:block/plant/leaves/branchy-pine",
+      "*-redwood": "game:block/plant/leaves/branchy-redwood",
+      "*-birch": "game:block/plant/leaves/branchy-birch",
+      "*-maple": "game:block/plant/leaves/branchy-maple",
+      "*-oak": "game:block/plant/leaves/branchy-oak",
+      "*-crimsonkingmaple": "game:block/plant/leaves/branchy-crimsonkingmaple",
+      "*-larch": "game:block/plant/leaves/branchy-larch",
+      "*-kapok": "game:block/plant/leaves/branchy-kapok",
+      "*": "game:block/plant/leaves/branchy"
+    },
+    rotateY: 10,
+    alternates: [
+      { rotateY: 61 },
+      { rotateY: 113 },
+      { rotateY: 164 },
+      { rotateY: 216 },
+      { rotateY: 267 },
+      { rotateY: 319 }
+    ]
+  },
+  lod0Shape: {
+    baseByType: {
+      "*-pine": "game:block/plant/leaves/branchy-pine-lod0",
+      "*-redwood": "game:block/plant/leaves/branchy-redwood-lod0",
+      "*-birch": "game:block/plant/leaves/branchy-birch-lod0",
+      "*-maple": "game:block/plant/leaves/branchy-maple-lod0",
+      "*-oak": "game:block/plant/leaves/branchy-oak-lod0",
+      "*-kapok": "game:block/plant/leaves/branchy-kapok-lod0",
+      "*-crimsonkingmaple": "game:block/plant/leaves/branchy-crimsonkingmaple-lod0",
+      "*-larch": "game:block/plant/leaves/branchy-larch-lod0",
+      "*": "game:block/plant/leaves/branchy-lod0"
+    },
+    rotateY: 10,
+    alternates: [
+      { rotateY: 61 },
+      { rotateY: 113 },
+      { rotateY: 164 },
+      { rotateY: 216 },
+      { rotateY: 267 },
+      { rotateY: 319 }
+    ]
+  },
+  resistance: 2.4,
+  textures: {
+    largeleavesByType: {
+      "*-larch": { base: "game:block/plant/leaves/large/pine*" },
+      "*-redwood": { base: "game:block/plant/leaves/large/pine*" },
+      "*-crimsonkingmaple": { base: "game:block/plant/leaves/large/maple*" },
+      "*": { base: "game:block/plant/leaves/large/{wood}*" },
+    },
+    smallleavesByType: {
+      "*": { base: "game:block/plant/leaves/large/branch" },
+    },
+    branch: { base: "game:block/plant/leaves/large/branch" }
+  },
+  sounds: {
+    break: "game:block/plant",
+    place: "game:block/plant",
+    hit: "game:block/plant",
+    walk: "game:walk/grass"
+  },
+}
