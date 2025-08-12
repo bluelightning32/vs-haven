@@ -1,0 +1,31 @@
+{
+  code: "berrybush",
+  class: "Block",
+  entityClass: null,
+  inheritFrom: "game:blocktypes/plant/smallberrybush.json",
+  variantgroups: [
+    { code: "type", states: ["blueberry", "cranberry", "redcurrant", "blackcurrant", "whitecurrant"] },
+  ],
+  replaceable: 400,
+  creativeinventory: { "general": ["*"] },
+  shapeByType: {
+    "*": { base: "game:block/plant/berrybush/small*" },
+  },
+  textures: {
+    "leavessmall": { base: "game:block/plant/berrybush/small/leaves/{type}*" },
+    "leaveslarge": { base: "game:block/plant/berrybush/large/leaves/{type}" },
+    "flowerberrysmall": { base: "game:block/plant/berrybush/small/fruit/{type}*" },
+    "flowerberrylarge": { base: "game:block/plant/berrybush/large/fruit/{type}" },
+  },
+  sounds: {
+    place: "game:block/plant",
+    break: "game:block/plant",
+    hit: "game:block/plant",
+    inside: "game:walk/inside/leafy/bushrustle*"
+  },
+  dropsByType: {
+    "*": [
+      { type: "block", code: "berrybush-{type}", quantity: { avg: 1 }  }
+    ]
+  },
+}
