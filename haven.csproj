@@ -62,6 +62,10 @@
             <HintPath>$(VINTAGE_STORY)/VintagestoryAPI.dll</HintPath>
             <Private>false</Private>
         </Reference>
+        <Reference Include="VSSurvivalMod">
+            <HintPath>$(VINTAGE_STORY)/Mods/VSSurvivalMod.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
 
         <!-- Import the JsonPeek Nuget package, because it provides the JsonPeek build task that is used later. -->
         <PackageReference Include="JsonPeek" Version="1.2.0" />

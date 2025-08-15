@@ -1,11 +1,43 @@
 {
   code: "quarry",
+  class: "Delegate",
   attributes: {
     handbook: {
       groupBy: ["quarry-*"],
     }
   },
-  behaviors: [{name: "UnstableFalling"},],
+  behaviors: [
+    { name: "UnstableFalling" },
+    {
+      name: "Dispenser",
+      properties: {
+        harvestTime: 0.6, 
+        harvestedStacksByType: {
+          "*-blueclay": [
+            { 
+              type: "item", 
+              code: "game:clay-blue",
+              quantity: { avg: 4.5, var: 1 },
+            },
+          ],
+          "*-fireclay": [
+            { 
+              type: "item", 
+              code: "game:clay-fire",
+              quantity: { avg: 4.5, var: 1 },
+            },
+          ],
+          "*": [
+            {
+              type: "item", 
+              code: "game:stone-{rock}",
+              quantity: { avg: 1, var: 0 } 
+            }
+          ]        
+        }
+      }
+    }
+  ],
   variantgroups: [
     { code:"rock", states: ["meteorite-iron", "blueclay", "fireclay"], loadFromProperties: "game:block/rockwithdeposit" },
   ],

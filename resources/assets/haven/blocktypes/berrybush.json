@@ -1,10 +1,19 @@
 {
   code: "berrybush",
-  class: "Block",
+  class: "Delegate",
   entityClass: null,
   inheritFrom: "game:blocktypes/plant/smallberrybush.json",
   variantgroups: [
     { code: "type", states: ["blueberry", "cranberry", "redcurrant", "blackcurrant", "whitecurrant"] },
+  ],
+  behaviors: [
+    {
+      name: "Dispenser",
+      properties: {
+        harvestTime: 0.6, 
+        harvestedStack: { type: "item", code: "game:fruit-{type}", quantity: { avg: 4.4 } },
+      }
+    }
   ],
   replaceable: 400,
   creativeinventory: { "general": ["*"] },

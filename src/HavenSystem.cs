@@ -1,5 +1,7 @@
 using System;
 
+using Haven.BlockBehaviors;
+
 using Vintagestory.API.Common;
 using Vintagestory.API.Server;
 
@@ -18,6 +20,9 @@ public class HavenSystem : ModSystem {
     base.Start(api);
 
     _api = api;
+
+    api.RegisterBlockBehaviorClass(nameof(Dispenser), typeof(Dispenser));
+    api.RegisterBlockClass(nameof(Blocks.Delegate), typeof(Blocks.Delegate));
   }
 
   public override void StartServerSide(ICoreServerAPI sapi) {
