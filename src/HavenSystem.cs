@@ -12,6 +12,7 @@ public class HavenSystem : ModSystem {
 
   public static string Domain { get; private set; }
   public ServerConfig ServerConfig { get; private set; }
+  public readonly CallbackScheduler Scheduler = new();
 
   public override double ExecuteOrder() { return 1.0; }
 
@@ -22,12 +23,22 @@ public class HavenSystem : ModSystem {
     _api = api;
 
     api.RegisterBlockBehaviorClass(nameof(Dispenser), typeof(Dispenser));
+    api.RegisterBlockEntityBehaviorClass(
+        nameof(BlockEntityBehaviors.Dispenser),
+        typeof(BlockEntityBehaviors.Dispenser));
     api.RegisterBlockClass(nameof(Blocks.Delegate), typeof(Blocks.Delegate));
+
+    Scheduler.Start(api);
   }
 
   public override void StartServerSide(ICoreServerAPI sapi) {
     base.StartServerSide(sapi);
     LoadConfigFile(sapi);
+  }
+
+  public override void Dispose() {
+    Scheduler.Dispose();
+    base.Dispose();
   }
 
   private void LoadConfigFile(ICoreServerAPI api) {

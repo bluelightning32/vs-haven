@@ -13,7 +13,7 @@
       {
         name: "Dispenser",
         properties: {
-          harvestTime: 0.6, 
+          harvestTime: 0.6,
           harvestedStacks: [
             { type: "item", code: "game:stick", quantity: { avg: 1, var: 0 } },
             {
@@ -30,11 +30,88 @@
                 "*": { avg: 0.05, var: 0 }
               }
             },
-          ]
+          ],
+          harvestedShape : {
+            base: "game:block/plant/leaves/normal",
+            overlays: [
+              {
+                base: "game:block/plant/leaves/normal-lod0",
+                rotateY: 10,
+              },
+            ],
+            rotateY: 10,
+            alternates: [
+              {
+                rotateY: 61,
+                overlays: [
+                  {
+                    base: "game:block/plant/leaves/normal-lod0",
+                    rotateY: 61,
+                  },
+                ],
+              },
+              {
+                rotateY: 113,
+                overlays: [
+                  {
+                    base: "game:block/plant/leaves/normal-lod0",
+                    rotateY: 113,
+                  },
+                ],
+              },
+              {
+                rotateY: 164,
+                overlays: [
+                  {
+                    base: "game:block/plant/leaves/normal-lod0",
+                    rotateY: 164,
+                  },
+                ],
+              },
+              {
+                rotateY: 216,
+                overlays: [
+                  {
+                    base: "game:block/plant/leaves/normal-lod0",
+                    rotateY: 216,
+                  },
+                ],
+              },
+              {
+                rotateY: 267,
+                overlays: [
+                  {
+                    base: "game:block/plant/leaves/normal-lod0",
+                    rotateY: 267,
+                  },
+                ],
+              },
+              {
+                rotateY: 319,
+                overlays: [
+                  {
+                    base: "game:block/plant/leaves/normal-lod0",
+                    rotateY: 319,
+                  },
+                ],
+              }
+            ]
+          },
+          harvestedTextures: {
+            smallleavesByType: {
+              "*-larch": { base: "game:block/plant/leaves/small/pine*" },
+              "*-redwood": { base: "game:block/plant/leaves/small/pine*" },
+              "*-crimsonkingmaple": { base: "game:block/plant/leaves/small/maple*" },
+              "*": { base: "game:block/plant/leaves/small/{wood}*" },
+            }
+          },
         }
       }
     ]
   },
+  entityBehaviors: [
+    { name: "Dispenser" },
+  ],
   variantgroups: [
     { code: "wood", states: ["crimsonkingmaple"], loadFromProperties: "block/wood" }
   ],
@@ -75,13 +152,13 @@
       "*": "game:block/plant/leaves/branchy-lod0"
     },
   },
-	shapeInventory: {
-		baseByType: {
-			"*-redwood": "game:block/plant/leaves/branchy-redwood-lod0",
-			"*-crimsonkingmaple": "game:block/plant/leaves/branchy-crimsonkingmaple-lod0",
-			"*": "game:block/plant/leaves/branchy-lod0"
-		}
-	},
+  shapeInventory: {
+    baseByType: {
+      "*-redwood": "game:block/plant/leaves/branchy-redwood-lod0",
+      "*-crimsonkingmaple": "game:block/plant/leaves/branchy-crimsonkingmaple-lod0",
+      "*": "game:block/plant/leaves/branchy-lod0"
+    }
+  },
   resistance: 2.4,
   textures: {
     largeleavesByType: {
@@ -91,9 +168,9 @@
       "*": { base: "game:block/plant/leaves/large/{wood}*" },
     },
     smallleavesByType: {
-			"*-larch": { base: "game:block/plant/leaves/large/branch" },
-			"*-redwood": { base: "game:block/plant/leaves/large/branch" },
-			"*-crimsonkingmaple": { base: "game:block/plant/leaves/large/branch" },
+      "*-larch": { base: "game:block/plant/leaves/large/branch" },
+      "*-redwood": { base: "game:block/plant/leaves/large/branch" },
+      "*-crimsonkingmaple": { base: "game:block/plant/leaves/large/branch" },
       "*": { base: "game:block/plant/leaves/large/branch" },
     },
     branch: { base: "game:block/plant/leaves/large/branch" }

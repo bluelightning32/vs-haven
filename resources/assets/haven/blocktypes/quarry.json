@@ -36,9 +36,15 @@
               quantity: { avg: 1, var: 0 } 
             }
           ]        
+        },
+        harvestedShape: {
+          base: "block/ashes",
         }
       }
     }
+  ],
+  entityBehaviors: [
+    { name: "Dispenser" },
   ],
   variantgroups: [
     { code:"rock", states: ["meteorite-iron", "blueclay", "fireclay"], loadFromProperties: "game:block/rockwithdeposit" },
