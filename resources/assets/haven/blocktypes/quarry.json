@@ -17,6 +17,7 @@
             { 
               type: "item", 
               code: "game:clay-blue",
+              tool: "shovel",
               quantity: { avg: 4.5, var: 1 },
             },
           ],
@@ -24,6 +25,7 @@
             { 
               type: "item", 
               code: "game:clay-fire",
+              tool: "shovel",
               quantity: { avg: 4.5, var: 1 },
             },
           ],

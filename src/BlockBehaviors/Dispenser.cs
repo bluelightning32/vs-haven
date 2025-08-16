@@ -58,6 +58,33 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
     _api = api;
   }
 
+  private bool HasRequiredTool(IPlayer byPlayer) {
+    if (harvestedStacks == null || harvestedStacks.Length == 0) {
+      return true;
+    }
+    bool hasMatchingTool = false;
+    harvestedStacks.Foreach(drop => {
+      if (drop.Tool == null) {
+        hasMatchingTool = true;
+      } else if (byPlayer != null &&
+                 drop.Tool == byPlayer.InventoryManager.ActiveTool) {
+        hasMatchingTool = true;
+      }
+    });
+    return hasMatchingTool;
+  }
+
+  public override bool OnBlockInteractStart(IWorldAccessor world,
+                                            IPlayer byPlayer,
+                                            BlockSelection blockSel,
+                                            ref EnumHandling handling) {
+    if (!HasRequiredTool(byPlayer)) {
+      handling = EnumHandling.PreventSubsequent;
+      return false;
+    }
+    return base.OnBlockInteractStart(world, byPlayer, blockSel, ref handling);
+  }
+
   public override bool
   OnBlockInteractStep(float secondsUsed, IWorldAccessor world, IPlayer byPlayer,
                       BlockSelection blockSel, ref EnumHandling handled) {
@@ -73,15 +100,29 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
   public override void
   OnBlockInteractStop(float secondsUsed, IWorldAccessor world, IPlayer byPlayer,
                       BlockSelection blockSel, ref EnumHandling handled) {
-    base.OnBlockInteractStop(secondsUsed, world, byPlayer, blockSel,
-                             ref handled);
-
-    // Unfortunately BlockBehaviorHarvestable does not have any hooks to run
-    // code when the block is harvested. So the harvest condition has to be
-    // duplicated here.
     if (secondsUsed > _harvestTime - 0.05f &&
         world.Side == EnumAppSide.Server) {
+      Dispense(world, byPlayer, blockSel.Position);
     }
+    handled = EnumHandling.PreventDefault;
+  }
+
+  private void Dispense(IWorldAccessor world, IPlayer byPlayer, BlockPos pos) {
+    harvestedStacks.Foreach(drop => {
+      // This method handles randomizing the stack size and validating that the
+      // player is holding the correct tool.
+      ItemStack stack = drop.ToRandomItemstackForPlayer(byPlayer, world, 1.0f);
+      if (stack == null)
+        return;
+      if (!byPlayer.InventoryManager.TryGiveItemstack(stack)) {
+        world.SpawnItemEntity(stack, byPlayer.Entity.Pos.AsBlockPos);
+      }
+      world.Logger.Audit("{0} Took {1}x{2} from {3} at {4}.",
+                         byPlayer.PlayerName, stack.StackSize,
+                         stack.Collectible.Code, block.Code, pos);
+    });
+
+    world.PlaySoundAt(harvestingSound, pos, 0, byPlayer);
   }
 
   public void GetResistance(IBlockAccessor blockAccessor, BlockPos pos,
@@ -99,7 +140,9 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
       handled = EnumHandling.PassThrough;
       return;
     }
-    remainingResistance -= dt;
+    if (HasRequiredTool(player)) {
+      remainingResistance -= dt;
+    }
     _lastSelection = blockSel;
     handled = EnumHandling.PreventSubsequent;
   }
@@ -112,14 +155,9 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
       handled = EnumHandling.PassThrough;
       return;
     }
-    // Treat the block break as a right click harvest instead.
-    BlockSelection blockSelection;
-    if (_lastSelection?.Block == block && _lastSelection.Position == pos) {
-      blockSelection = _lastSelection;
-    } else {
-      blockSelection = new BlockSelection(pos, BlockFacing.UP, block);
+    handled = EnumHandling.PreventDefault;
+    if (world.Side == EnumAppSide.Server) {
+      Dispense(world, player, pos);
     }
-    OnBlockInteractStop(_harvestTime, world, player, blockSelection,
-                        ref handled);
   }
 }
