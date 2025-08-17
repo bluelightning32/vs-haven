@@ -72,18 +72,29 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
     if (api is ICoreClientAPI capi && _harvestedShape != null) {
       List<MeshData> meshes = new();
       _harvestedShape.LoadAlternates(capi.Assets, capi.Logger);
+      byte climateColorMapIndex = 0;
+      if (block.ClimateColorMapResolved != null) {
+        climateColorMapIndex =
+            (byte)(block.ClimateColorMapResolved.RectIndex + 1);
+      }
+      byte seasonColorMapIndex = 0;
+      if (block.SeasonColorMapResolved != null) {
+        seasonColorMapIndex =
+            (byte)(block.SeasonColorMapResolved.RectIndex + 1);
+      }
       capi.Tesselator.TesselateShape(
           "Dispenser", block.Code, _harvestedShape, out MeshData mesh,
           new OverlayTextureSource(capi, block.Code, _harvestedTextures,
-                                   capi.Tesselator.GetTextureSource(block)));
+                                   capi.Tesselator.GetTextureSource(block)),
+          0, climateColorMapIndex, seasonColorMapIndex);
       meshes.Add(mesh);
       if (_harvestedShape.Alternates != null) {
         foreach (CompositeShape shape in _harvestedShape.Alternates) {
           capi.Tesselator.TesselateShape(
               "Dispenser", block.Code, shape, out mesh,
-              new OverlayTextureSource(
-                  capi, block.Code, _harvestedTextures,
-                  capi.Tesselator.GetTextureSource(block)));
+              new OverlayTextureSource(capi, block.Code, _harvestedTextures,
+                                       capi.Tesselator.GetTextureSource(block)),
+              0, climateColorMapIndex, seasonColorMapIndex);
           meshes.Add(mesh);
         }
       }

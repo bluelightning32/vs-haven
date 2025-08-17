@@ -175,6 +175,27 @@
     },
     branch: { base: "game:block/plant/leaves/large/branch" }
   },
+  // The branchy shapes directly define their climate and season color maps.
+  // However, the normal shape (used after harvesting) does not, and relies on
+  // inheriting the values from the block. So set them on the block for the
+  // harvested shape.
+  climateColorMapByType: {
+    "*-crimsonkingmaple": "climateCrimsonKingTint",
+    "*-redwood": "climateDarkerPlantTint",
+    "*": "climatePlantTint"
+  },
+  seasonColorMapByType: {
+    "*-pine": "seasonalNeedles",
+    "*-redwood": "seasonalNeedles",
+    "*-birch": "seasonalBirch",
+    "*-maple": "seasonalMaple",
+    "*-oak": "seasonalOak",
+    "*-walnut": "seasonalWalnut",
+    "*-larch": "seasonalLarch",
+    "*-crimsonkingmaple": "seasonalCrimsonKingMaple",
+    "*-kapok": "tropicalKapok",
+    "*": "seasonalFoliage",
+  },
   drops: [ { type: "block", code: "branches-{wood}", quantity: { avg: 1 } } ],
   sounds: {
     break: "game:block/plant",
