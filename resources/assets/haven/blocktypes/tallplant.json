@@ -1,0 +1,70 @@
+{
+  code: "tallplant",
+  class: "Delegate",
+  entityclass: "Generic",
+  inheritFrom: "game:blocktypes/plant/reedpapyrus.json",
+  variantgroups: [
+      { code: "type", states: ["coopersreed", "papyrus" ] },
+      { code: "habitat", states: ["land", "water", "ice"] },
+      { code: "cover", states: ["free", "snow"] },
+  ],
+  behaviors: [
+    {
+      name: "Dispenser",
+      properties: {
+        harvestTime: 0.6, 
+        harvestedStackByType: {
+          "*-coopersreed-*": { type: "item", code: "game:cattailtops" },
+          "*-papyrus-*": { type: "item", code: "game:papyrustops" },
+        },
+        harvestedShape: {
+          baseByType: {
+            "*-coopersreed-*": "game:block/plant/reedpapyrus/coopersreed-harvested*",
+            "*-papyrus-*": "game:block/plant/reedpapyrus/papyrus-harvested",
+          },
+          overlaysByType: {
+            "*-coopersreed-*": [
+              {
+                base: "game:block/plant/reedpapyrus/coopersreed-lod2-harvested",
+                rotateY: 10,
+              },
+            ],
+          }
+        },
+      }
+    }
+  ],
+  entityBehaviors: [
+    { name: "Dispenser" },
+  ],
+  replaceable: 400,
+  creativeinventory: { 
+    "general": ["*-land-free"], 
+    "flora": ["*-land-free"] 
+  },
+  shapeByType: {
+    "tallplant-papyrus-*": { base: "game:block/plant/reedpapyrus/papyrus-medium", alternates: [ { base: "game:block/plant/reedpapyrus/papyrus-tall" } ] },
+    "tallplant-coopersreed-*": { base: "game:block/plant/reedpapyrus/coopersreed-normal*" },
+  },
+  lod2shapeByType: {
+    "tallplant-coopersreed-*": { base: "game:block/plant/reedpapyrus/coopersreed-lod2-normal*" },
+  },
+  texturesByType: {
+    "tallplant-papyrus-*": {
+    },
+    "tallplant-coopersreed-*": { 
+      "cobs1": { base: "game:block/plant/reeds/lod2-1" },
+      "cobs2": { base: "game:block/plant/reeds/lod2-2" }
+    },
+  },
+  sounds: {
+    place: "game:block/plant",
+    break: "game:block/plant",
+    hit: "game:block/plant"
+  },
+  dropsByType: {
+    "*": [
+      { type: "block", code: "tallplant-{type}-land-free", quantity: { avg: 1 }  }
+    ]
+  },
+}
