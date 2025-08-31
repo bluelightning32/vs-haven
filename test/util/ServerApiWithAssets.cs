@@ -69,9 +69,15 @@ class ServerApiWithAssets {
     _ = new ServerSystemModHandler(server);
     ServerCoreAPI api = (ServerCoreAPI)server.Api;
 
+    FieldInfo serverChunkDataPoolField = server.GetType().GetField(
+        "serverChunkDataPool", BindingFlags.Instance | BindingFlags.NonPublic);
+    serverChunkDataPoolField.SetValue(
+        server, new ChunkDataPool(MagicNum.ServerChunkSize, server));
+
     FieldInfo systemsField = server.GetType().GetField(
         "Systems", BindingFlags.Instance | BindingFlags.NonPublic);
-    systemsField.SetValue(server, Array.Empty<ServerSystem>());
+    systemsField.SetValue(server,
+                          new ServerSystem[] { new FakeChunkLoader(server) });
 
     server.ModEventManager = new ServerEventManager(server);
     server.AssetManager =
@@ -141,6 +147,9 @@ class ServerApiWithAssets {
 
     loader.RunModPhase(ModRunPhase.Pre);
     loader.RunModPhase(ModRunPhase.Start);
+
+    server.WorldMap = new ServerWorldMap(server);
+    server.WorldMap.Init(1000, 32 * 5, 1000);
 
     if (disallowByDefault) {
       foreach (AssetCategory category in AssetCategory.categories.Values) {
