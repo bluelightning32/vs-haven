@@ -8,6 +8,13 @@
       { code: "habitat", states: ["land", "water", "ice"] },
       { code: "cover", states: ["free", "snow"] },
   ],
+  allowedVariants: [
+    "*-land-*",
+    "tallplant-coopersreed-water-free",
+    "tallplant-coopersreed-ice-free",
+    "tallplant-papyrus-water-free",
+    "tallplant-papyrus-ice-free",
+  ],
   behaviors: [
     {
       name: "Dispenser",
