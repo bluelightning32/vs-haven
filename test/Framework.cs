@@ -115,4 +115,22 @@ public class Framework {
     Server.World.BlockAccessor.SetBlock(newBlock.Id, pos);
     Assert.AreEqual(newBlock, Server.World.BlockAccessor.GetBlock(pos));
   }
+
+  [TestMethod]
+  public void LoadMapChunk() {
+    ICoreServerAPI sapi = (ICoreServerAPI)Server.Api;
+    sapi.WorldManager.LoadChunkColumnPriority(0, 0);
+    Server.LoadChunksInline();
+    IServerMapChunk mapChunk = sapi.WorldManager.GetMapChunk(0, 0);
+    Assert.IsNotNull(mapChunk);
+  }
+
+  [TestMethod]
+  public void LoadMapRegion() {
+    ICoreServerAPI sapi = (ICoreServerAPI)Server.Api;
+    sapi.WorldManager.LoadChunkColumnPriority(0, 0);
+    Server.LoadChunksInline();
+    IMapRegion mapRegion = sapi.WorldManager.GetMapRegion(0, 0);
+    Assert.IsNotNull(mapRegion);
+  }
 }
