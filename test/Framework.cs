@@ -78,8 +78,16 @@ public class Framework {
         Server.World.GetBlock(new AssetLocation("game:rock-granite"));
     chunk.Unpack();
     chunk.Data[0] = granite.Id;
+    chunk.MarkModified();
 
-    Server.UnloadChunkColumn(0, 0);
+    // UnloadChunkColumn arguably has a bug where it skips saving the chunk
+    // befor unloading it. So save all of the dirty chunks before unloading the
+    // chunk so that the chunk modification above is not lost.
+    Server.SaveGameInline();
+    sapi.WorldManager.UnloadChunkColumn(0, 0);
+    chunk = sapi.WorldManager.GetChunk(0, 0, 0);
+    Assert.IsNull(chunk);
+
     sapi.WorldManager.LoadChunkColumnPriority(0, 0);
     Server.LoadChunksInline();
 
@@ -99,6 +107,7 @@ public class Framework {
     ICoreServerAPI sapi = (ICoreServerAPI)Server.Api;
     sapi.WorldManager.LoadChunkColumnPriority(
         pos.X / Server.WorldMap.ChunkSize, pos.Y / Server.WorldMap.ChunkSize);
+    Server.LoadChunksInline();
     Block block = Server.World.BlockAccessor.GetBlock(pos);
     Assert.IsNotNull(block);
 

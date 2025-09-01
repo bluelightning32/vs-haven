@@ -2,6 +2,7 @@ using System.Reflection;
 
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
+using Vintagestory.API.Server;
 using Vintagestory.Common;
 using Vintagestory.GameContent;
 using Vintagestory.Server;
@@ -65,6 +66,9 @@ class ServerApiWithAssets {
     string[] rawArgs = Array.Empty<string>();
     ServerProgramArgs programArgs = new();
     ServerMain server = new(serverArgs, rawArgs, programArgs, false);
+    // This would normally be set by ServerProgram.Main.
+    server.exit = new GameExit();
+
     // This creates a ServerCoreAPI and sets server.api.
     _ = new ServerSystemModHandler(server);
     ServerCoreAPI api = (ServerCoreAPI)server.Api;
@@ -74,10 +78,36 @@ class ServerApiWithAssets {
     serverChunkDataPoolField.SetValue(
         server, new ChunkDataPool(MagicNum.ServerChunkSize, server));
 
+    server.ModEventManager = new ServerEventManager(server);
+    server.EventManager =
+        new CoreServerEventManager(server, server.ModEventManager);
+    server.PlayerDataManager = new(server);
+
+    // Even though this is called a ChunkServerThread, it doesn't directly
+    // launch a system thread. Instead, ServerMain.Launch would create a real
+    // Thread that calls chunkThread.Process. However, our fake server will not
+    // start the real background thread. Instead, unit tests will call
+    // LoadChunksInline.
+    ChunkServerThread chunkThread =
+        new(server, "chunkdbthread", server.ServerThreadsCts.Token);
+    FieldInfo chunkThreadField = server.GetType().GetField(
+        "chunkThread", BindingFlags.Instance | BindingFlags.NonPublic);
+    chunkThreadField.SetValue(server, chunkThread);
+
+    Type serverSystemSupplyChunksType = server.GetType().Assembly.GetType(
+        "Vintagestory.Server.ServerSystemSupplyChunks");
+    ServerSystem supplyChunks = (ServerSystem)Activator.CreateInstance(
+        serverSystemSupplyChunksType, [server, chunkThread]);
+
+    Type serverSystemLoadAndSaveGameType = server.GetType().Assembly.GetType(
+        "Vintagestory.Server.ServerSystemLoadAndSaveGame");
+    ServerSystem loadsavegame = (ServerSystem)Activator.CreateInstance(
+        serverSystemLoadAndSaveGameType, [server, chunkThread]);
+
     FieldInfo systemsField = server.GetType().GetField(
         "Systems", BindingFlags.Instance | BindingFlags.NonPublic);
     systemsField.SetValue(server,
-                          new ServerSystem[] { new FakeChunkLoader(server) });
+                          new ServerSystem[] { supplyChunks, loadsavegame });
 
     server.ModEventManager = new ServerEventManager(server);
     server.AssetManager =
@@ -151,6 +181,23 @@ class ServerApiWithAssets {
     server.WorldMap = new ServerWorldMap(server);
     server.WorldMap.Init(1000, 32 * 5, 1000);
 
+    // This would usually be created and set by
+    // ServerSystemLoadAndSaveGame.OnBeginConfiguration.
+    GameDatabase gameDatabase = new(ServerMain.Logger);
+    FieldInfo gameDatabaseField = chunkThread.GetType().GetField(
+        "gameDatabase", BindingFlags.Instance | BindingFlags.NonPublic);
+    gameDatabaseField.SetValue(chunkThread, gameDatabase);
+
+    // This would usually be set by GameDatabase.OpenConnection.
+    FakeGameDbConnection conn = new();
+    FieldInfo connField = gameDatabase.GetType().GetField(
+        "conn", BindingFlags.Instance | BindingFlags.NonPublic);
+    connField.SetValue(gameDatabase, conn);
+
+    MethodInfo loadSaveGameMethod = loadsavegame.GetType().GetMethod(
+        "LoadSaveGame", BindingFlags.Instance | BindingFlags.NonPublic);
+    loadSaveGameMethod.Invoke(loadsavegame, []);
+
     if (disallowByDefault) {
       foreach (AssetCategory category in AssetCategory.categories.Values) {
         if (!allowAssetFiles.ContainsKey(category) &&
@@ -185,6 +232,20 @@ class ServerApiWithAssets {
         "GameWorldCalendar", BindingFlags.Instance | BindingFlags.NonPublic);
     GameCalendar calendar = new(sunlight, 0, 1L);
     gameWorldCalendarField.SetValue(server, calendar);
+
+    // This is normally set by
+    // ServerSystemSupplyChunks.InitWorldgenAndSpawnChunks.
+    FieldInfo worldgenHandlerField = supplyChunks.GetType().GetField(
+        "worldgenHandler", BindingFlags.Instance | BindingFlags.NonPublic);
+    WorldGenHandler worldgenHandler = new();
+    worldgenHandlerField.SetValue(supplyChunks, worldgenHandler);
+
+    MethodInfo enterRunPhaseMethod = server.GetType().GetMethod(
+        "EnterRunPhase", BindingFlags.Instance | BindingFlags.NonPublic);
+    enterRunPhaseMethod.Invoke(server, [EnumServerRunPhase.RunGame]);
+
+    // This registers the save game callback.
+    loadsavegame.OnBeginRunGame();
     return server;
   }
 }
