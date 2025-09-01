@@ -1,19 +1,14 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using PrefixClassName.MsTest;
 
 using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.Server;
 
-using Real = Haven;
-
 namespace Haven.Test;
 
 [PrefixTestClass]
-public class LoadAssets {
+public class Framework {
   // This property is set by the test framework:
   // https://learn.microsoft.com/en-us/visualstudio/test/how-to-create-a-data-driven-unit-test?view=vs-2022#add-a-testcontext-to-the-test-class
   public TestContext TestContext { get; set; } = null!;
