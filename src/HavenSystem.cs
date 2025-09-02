@@ -11,6 +11,7 @@ public class HavenSystem : ModSystem {
   private ICoreAPI _api;
 
   public static string Domain { get; private set; }
+  public static ILogger Logger { get; private set; }
   public ServerConfig ServerConfig { get; private set; }
   public readonly CallbackScheduler Scheduler = new();
 
@@ -19,6 +20,7 @@ public class HavenSystem : ModSystem {
   public override void Start(ICoreAPI api) {
     Domain = Mod.Info.ModID;
     base.Start(api);
+    Logger = Mod.Logger;
 
     _api = api;
 

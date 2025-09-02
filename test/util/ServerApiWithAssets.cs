@@ -48,6 +48,13 @@ public class FilterOrigin : IAssetOrigin {
 }
 
 class ServerApiWithAssets {
+  public static string HavenResourcesPath {
+    get {
+      string path = AppDomain.CurrentDomain.BaseDirectory;
+      return Path.Join(path, "..", "..", "..", "..", "resources");
+    }
+  }
+
   public static ServerMain
   Create(Dictionary<AssetCategory, HashSet<string>> allowAssetFiles,
          bool disallowByDefault = true, bool logDebug = false) {
@@ -212,6 +219,8 @@ class ServerApiWithAssets {
       server.AssetManager.CustomModOrigins[i] = new FilterOrigin(
           server.AssetManager.CustomModOrigins[i], allowAssetFiles);
     }
+    server.AssetManager.CustomAppOrigins.Add(
+        new FolderOrigin(HavenResourcesPath));
 
     server.AssetManager.AddExternalAssets(api.Logger, loader);
 

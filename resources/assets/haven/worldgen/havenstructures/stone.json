@@ -1,0 +1,13 @@
+{
+  code: "granite",
+  schematics: {
+    "granite": {
+      schematic: "granite",
+    },
+  },
+  count: {
+    // Each haven will have 1 to 5 stone sources.
+    avg: 3,
+    var: 2
+  }
+}

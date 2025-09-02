@@ -1,0 +1,14 @@
+{
+  code: "clay",
+  schematics: {
+    "blue": {
+      schematic: "blueclay",
+    },
+  },
+  count: {
+    dist: "gaussian",
+    // Most havens will not have a clay source.
+    avg: -1,
+    var: 4
+  }
+}

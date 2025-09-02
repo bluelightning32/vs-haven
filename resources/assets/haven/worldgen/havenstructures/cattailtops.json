@@ -1,0 +1,12 @@
+{
+  code: "cattailtops",
+  schematics: {
+    "coopersreed": {
+      schematic: "coopersreed",
+      offsetY: -1,
+    },
+  },
+  count: {
+    avg: 1,
+  }
+}

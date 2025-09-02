@@ -1,0 +1,14 @@
+{
+  code: "food",
+  schematics: {
+    "cranberry": {
+      schematic: "cranberry",
+      offsetY: -1,
+    },
+  },
+  count: {
+    // Each haven will have 1 to 3 berry bush groups.
+    avg: 2.2,
+    var: 1
+  }
+}

@@ -1,0 +1,16 @@
+{
+  code: "stick",
+  schematics: {
+    "birch": {
+      schematic: "birch",
+      offsetY: -1,
+    },
+    "oak": {
+      schematic: "oak",
+      offsetY: -1,
+    },
+  },
+  count: {
+    avg: 1
+  }
+}
