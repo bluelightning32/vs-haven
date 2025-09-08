@@ -128,12 +128,14 @@ class ServerApiWithAssets {
         "SaveGameData", BindingFlags.Instance | BindingFlags.NonPublic);
     saveGameDataField.SetValue(server, saveGame);
 
+    string testModDir =
+        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..");
+
     // The mod loader is hardcoded to load libraries from
     // AppDomain.CurrentDomain.BaseDirectory. The only way to change that
     // property in .net 7 is to set the following variable.
     AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", vsPath);
-    ModLoader loader =
-        new(api, Array.Empty<string>(), server.progArgs.TraceLog);
+    ModLoader loader = new(api, [testModDir], server.progArgs.TraceLog);
     // Reset the AppDomain.CurrentDomain.BaseDirectory.
     AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", null);
 
@@ -156,15 +158,16 @@ class ServerApiWithAssets {
 
       ModContainer modContainer =
           new(new FileInfo(modType.Assembly.Location), api.Logger, logDebug);
-      object[] args = new object[] {
-        info, new List<Vintagestory.API.Common.ModDependency>(), null
-      };
+      object[] args = new object[] { info, new List<ModDependency>(), null };
       ModInfo modInfo =
           (ModInfo)loadModInfoFromModInfoAttribute.Invoke(modContainer, args);
       infoProperty.GetSetMethod(true).Invoke(modContainer,
                                              new object[] { modInfo });
       mods.Add(modContainer);
     }
+
+    // Add the haven mod to the list.
+    mods.AddRange(loader.LoadModInfos());
 
     loader.LoadMods(mods);
 
