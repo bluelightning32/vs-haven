@@ -14,12 +14,12 @@ public class ResourceZonePlanner {
   /// <param name="x">x coordinate of the point to translate</param>
   /// <param name="y">y coordinate of the point to translate</param>
   /// <returns>distance</returns>
-  public static double GetPointToCircleDist(double angle, double radius,
-                                            double x, double y) {
+  public static double GetPointToCircleDist(double x, double y, double angle,
+                                            double radius) {
     // This is based on
     // https://mathworld.wolfram.com/Circle-LineIntersection.html.
     (double sin, double cos) = Math.SinCos(angle);
-    return GetPointToCircleDist(new Vec2d(cos, sin), radius, x, y);
+    return GetPointToCircleDist(x, y, new Vec2d(cos, sin), radius);
   }
 
   /// <summary>
@@ -31,8 +31,8 @@ public class ResourceZonePlanner {
   /// <param name="x">x coordinate of the point to translate</param>
   /// <param name="y">y coordinate of the point to translate</param>
   /// <returns>distance</returns>
-  public static double GetPointToCircleDist(Vec2d u, double radius, double x,
-                                            double y) {
+  public static double GetPointToCircleDist(double x, double y, Vec2d u,
+                                            double radius) {
     // This is based on
     // https://mathworld.wolfram.com/Circle-LineIntersection.html.
     double d = x * u.Y - y * u.X;

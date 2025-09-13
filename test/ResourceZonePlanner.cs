@@ -6,10 +6,10 @@ namespace Haven.Test;
 
 [PrefixTestClass]
 public class ResourceZonePlanner {
-  public void TestGetPointToCircleDist(double angle, double radius, double x,
-                                       double y) {
+  public static void TestGetPointToCircleDist(double x, double y, double angle,
+                                              double radius) {
     double rAdjusted =
-        Real.ResourceZonePlanner.GetPointToCircleDist(angle, radius, x, y);
+        Real.ResourceZonePlanner.GetPointToCircleDist(x, y, angle, radius);
     double xShifted = x + rAdjusted * Math.Cos(angle);
     double yShifted = y + rAdjusted * Math.Sin(angle);
     Assert.AreEqual(
@@ -18,31 +18,31 @@ public class ResourceZonePlanner {
 
   [TestMethod]
   public void GetPointToCircleDistHorizontal() {
-    TestGetPointToCircleDist(0, 20, 3, 3.5);
+    TestGetPointToCircleDist(3, 3.5, 0, 20);
   }
 
   [TestMethod]
   public void GetPointToCircleDistVertical() {
-    TestGetPointToCircleDist(Math.PI / 2, 20, 3, 3.5);
+    TestGetPointToCircleDist(3, 3.5, Math.PI / 2, 20);
   }
 
   [TestMethod]
   public void GetPointToCircleDistQ1() {
-    TestGetPointToCircleDist(Math.PI / 3, 20, 3, 3.5);
+    TestGetPointToCircleDist(3, 3.5, Math.PI / 3, 20);
   }
 
   [TestMethod]
   public void GetPointToCircleDistQ2() {
-    TestGetPointToCircleDist(2 * Math.PI / 3, 20, 3, 3.5);
+    TestGetPointToCircleDist(3, 3.5, 2 * Math.PI / 3, 20);
   }
 
   [TestMethod]
   public void GetPointToCircleDistQ3() {
-    TestGetPointToCircleDist(5 * Math.PI / 4, 20, 3, 3.5);
+    TestGetPointToCircleDist(3, 3.5, 5 * Math.PI / 4, 20);
   }
 
   [TestMethod]
   public void GetPointToCircleDistQ4() {
-    TestGetPointToCircleDist(7 * Math.PI / 4, 20, 3, 3.5);
+    TestGetPointToCircleDist(3, 3.5, 7 * Math.PI / 4, 20);
   }
 }
