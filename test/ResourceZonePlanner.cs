@@ -7,7 +7,7 @@ namespace Haven.Test;
 [PrefixTestClass]
 public class ResourceZonePlanner {
   public void TestGetPointToCircleDist(double angle, double radius, double x,
-                                      double y) {
+                                       double y) {
     double rAdjusted =
         Real.ResourceZonePlanner.GetPointToCircleDist(angle, radius, x, y);
     double xShifted = x + rAdjusted * Math.Cos(angle);
