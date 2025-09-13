@@ -48,16 +48,33 @@ public class ResourceZonePlanner {
     TestGetPointToCircleDist(3, 3.5, 7 * Math.PI / 4, 20);
   }
 
+  private bool IsRectInCircle(Vec2d rCenter, double rWidth, double rHeight,
+                              double radius) {
+    double radiusSquared = radius * radius;
+    foreach (double y in new double[] { rCenter.Y - rHeight / 2,
+                                        rCenter.Y + rHeight / 2 }) {
+      foreach (double x in new double[] { rCenter.X - rWidth / 2,
+                                          rCenter.X + rWidth / 2 }) {
+        if (x * x + y * y > radiusSquared) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   private void TestGetRectToCircleDist(int rWidth, int rHeight, double angle,
                                        double radius) {
     double dist = Real.ResourceZonePlanner.GetRectToCircleDist(rWidth, rHeight,
                                                                angle, radius);
     int touching = 0;
     (double sin, double cos) = Math.SinCos(angle);
-    foreach (double y in new double[] { rHeight / 2, -rHeight / 2 }) {
-      foreach (double x in new double[] { rWidth / 2, -rWidth / 2 }) {
-        double shiftedX = x + cos * dist;
-        double shiftedY = y + sin * dist;
+    Assert.IsTrue(IsRectInCircle(new Vec2d(cos * dist, sin * dist), rWidth,
+                                 rHeight, radius));
+    foreach (double dy in new double[] { rHeight / 2, -rHeight / 2 }) {
+      foreach (double dx in new double[] { rWidth / 2, -rWidth / 2 }) {
+        double shiftedX = dx + cos * dist;
+        double shiftedY = dy + sin * dist;
         double pDist = Math.Sqrt(shiftedX * shiftedX + shiftedY * shiftedY);
         if (Math.Abs(pDist - radius) < 0.0001) {
           ++touching;
@@ -83,8 +100,68 @@ public class ResourceZonePlanner {
   }
 
   [TestMethod]
+  public void GetRectToCircleDistXX() {
+    TestGetRectToCircleDist(1, 2, 1.8671859004511877, 4);
+  }
+
+  [TestMethod]
   public void GetRectToCircleDistOverSized() {
     Assert.IsLessThan(
         0, Real.ResourceZonePlanner.GetRectToCircleDist(50, 40, 0, 20));
+  }
+
+  [TestMethod]
+  public void GetRandomRectCenterInCircleFairness() {
+    NormalRandom rand = new(0);
+    double rWidth = 1;
+    double rHeight = 2;
+    int radius = 4;
+    Dictionary<Vec2i, int> selectedDistribution = new();
+    for (int i = 0; i < 2000; ++i) {
+      Vec2d center = Real.ResourceZonePlanner.GetRandomRectCenterInCircle(
+          rand, rWidth, rHeight, radius);
+      Assert.IsTrue(
+          IsRectInCircle(center, rWidth, rHeight, radius),
+          $"Rectangle with center ({center.X}, {center.Y}) is outside the circle of radius {radius}");
+      double x = Math.Floor(center.X);
+      double y = Math.Floor(center.Y);
+      bool allIn = true;
+      foreach (double dy in new double[] { 0, 1 }) {
+        foreach (double dx in new double[] { 0, 1 }) {
+          if (!IsRectInCircle(new Vec2d(x + dx, y + dy), rWidth, rHeight,
+                              radius)) {
+            allIn = false;
+            break;
+          }
+        }
+      }
+      if (allIn) {
+        selectedDistribution.TryGetValue(new Vec2i((int)x, (int)y),
+                                         out int oldCount);
+
+        selectedDistribution[new Vec2i((int)x, (int)y)] = oldCount + 1;
+      }
+    }
+    Assert.HasCount(16, selectedDistribution);
+
+    int min = 10000;
+    Vec2i minPlace = null;
+    int max = 0;
+    Vec2i maxPlace = null;
+    foreach ((Vec2i key, int count) in selectedDistribution) {
+      if (count < min) {
+        min = count;
+        minPlace = key;
+      }
+      if (count > max) {
+        max = count;
+        maxPlace = key;
+      }
+    }
+    Assert.IsLessThan(
+        30, max - min,
+        $"Difference between min count ({min}) at " +
+            $"({minPlace.X}, {minPlace.Y}) and max count ({max}) at " +
+            $"({maxPlace.X}, {maxPlace.Y}) is greater than expected");
   }
 }

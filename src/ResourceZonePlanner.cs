@@ -38,8 +38,9 @@ public class ResourceZonePlanner {
   }
 
   /// <summary>
-  /// Gets the distance between a rectangle centered inside a circle the border
-  /// of the circle. The distance is measured along the given unit vector.
+  /// Gets the distance between a rectangle centered inside a circle and the
+  /// border of the circle. The distance is measured along the given unit
+  /// vector.
   /// </summary>
   /// <param name="rWidth">width of the rectangle</param>
   /// <param name="rHeight">height of the rectangle</param>
@@ -58,8 +59,9 @@ public class ResourceZonePlanner {
   }
 
   /// <summary>
-  /// Gets the distance between a rectangle centered inside a circle the border
-  /// of the circle. The distance is measured along the given unit vector.
+  /// Gets the distance between a rectangle centered inside a circle and the
+  /// border of the circle. The distance is measured along the given unit
+  /// vector.
   /// </summary>
   /// <param name="rWidth">width of the rectangle</param>
   /// <param name="rHeight">height of the rectangle</param>
@@ -73,5 +75,47 @@ public class ResourceZonePlanner {
                                            double angle, double radius) {
     (double sin, double cos) = Math.SinCos(angle);
     return GetRectToCircleDist(rWidth, rHeight, new Vec2d(cos, sin), radius);
+  }
+
+  /// <summary>
+  /// Randomly select a point within the circle such that the rectangle fits
+  /// within the circle with that point as its center. The given rectangle must
+  /// fit within the circle.
+  /// </summary>
+  /// <param name="rand">random number generator</param>
+  /// <param name="rWidth">width of the rectangle</param>
+  /// <param name="rHeight">height of the rectangle</param>
+  /// <param name="radius">radius of the circle</param>
+  /// <returns>randomly selected center position for the rectangle</returns>
+  public static Vec2d GetRandomRectCenterInCircle(IRandom rand, double rWidth,
+                                                  double rHeight,
+                                                  double radius) {
+    // Let x be a uniformly random number between 0 to 1. If every point within
+    // a circle of area a could be enumerated in order, then P(x*a) would be a
+    // uniformly random point in the circle.
+    //
+    // Let's say the points of the circle are enumerated starting from the
+    // center of the circle and spirling out. Then the following equation shows
+    // P(x*a)'s distance from the center of the circle.
+    //   x * a = pi * s^2
+    //   x * a / pi = s^2
+    //   s = sqrt(x * a / pi)
+    // Now if a is calculated as a = pi * r^2, then s is:
+    //   s = sqrt(x * (pi * r^2) / pi)
+    //   s = sqrt(x * r^2)
+    //   s = sqrt(x) * r
+    //
+    // So a random point in the circle can be selected by first picking a random
+    // angle, then picking a distance from the center of the circle with sqrt(x)
+    // * r.
+    double angle = rand.NextDouble() * Math.Tau;
+    (double sin, double cos) = Math.SinCos(angle);
+    Vec2d u = new(cos, sin);
+    // Find how far the rectangle can be moved in that direction without leaving
+    // the circle. This is used to effectively shrink the radius used to select
+    // the rectangle center position.
+    double adjustedRadius = GetRectToCircleDist(rWidth, rHeight, u, radius);
+    double centerDist = Math.Sqrt(rand.NextDouble()) * adjustedRadius;
+    return u * centerDist;
   }
 }
