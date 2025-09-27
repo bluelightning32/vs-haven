@@ -7,11 +7,11 @@ using Real = Haven;
 namespace Haven.Test;
 
 [PrefixTestClass]
-public class ResourceZonePlanner {
+public class ResourceZonePlan {
   private static void TestGetPointToCircleDist(double x, double y, double angle,
                                                double radius) {
     double rAdjusted =
-        Real.ResourceZonePlanner.GetPointToCircleDist(x, y, angle, radius);
+        Real.ResourceZonePlan.GetPointToCircleDist(x, y, angle, radius);
     double xShifted = x + rAdjusted * Math.Cos(angle);
     double yShifted = y + rAdjusted * Math.Sin(angle);
     Assert.AreEqual(
@@ -65,8 +65,8 @@ public class ResourceZonePlanner {
 
   private void TestGetRectToCircleDist(int rWidth, int rHeight, double angle,
                                        double radius) {
-    double dist = Real.ResourceZonePlanner.GetRectToCircleDist(rWidth, rHeight,
-                                                               angle, radius);
+    double dist = Real.ResourceZonePlan.GetRectToCircleDist(rWidth, rHeight,
+                                                            angle, radius);
     int touching = 0;
     (double sin, double cos) = Math.SinCos(angle);
     Assert.IsTrue(IsRectInCircle(new Vec2d(cos * dist, sin * dist), rWidth,
@@ -106,8 +106,8 @@ public class ResourceZonePlanner {
 
   [TestMethod]
   public void GetRectToCircleDistOverSized() {
-    Assert.IsLessThan(
-        0, Real.ResourceZonePlanner.GetRectToCircleDist(50, 40, 0, 20));
+    Assert.IsLessThan(0,
+                      Real.ResourceZonePlan.GetRectToCircleDist(50, 40, 0, 20));
   }
 
   [TestMethod]
@@ -118,7 +118,7 @@ public class ResourceZonePlanner {
     int radius = 4;
     Dictionary<Vec2i, int> selectedDistribution = new();
     for (int i = 0; i < 2000; ++i) {
-      Vec2d center = Real.ResourceZonePlanner.GetRandomRectCenterInCircle(
+      Vec2d center = Real.ResourceZonePlan.GetRandomRectCenterInCircle(
           rand, rWidth, rHeight, radius);
       Assert.IsTrue(
           IsRectInCircle(center, rWidth, rHeight, radius),

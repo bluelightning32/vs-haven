@@ -1,10 +1,16 @@
 using System;
+using System.Collections.Generic;
 
+using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
 namespace Haven;
 
-public class ResourceZonePlanner {
+public class ResourceZonePlan {
+  public ResourceZonePlan(BlockPos center, double minRadius,
+                          IAssetManager assetManager, IRandom rand,
+                          IEnumerable<OffsetBlockSchematic> structures) {}
+
   /// <summary>
   /// Finds the distance between a point (x,y) inside a circle and the boundary
   /// of the circle, when the point is translated at the given angle.
