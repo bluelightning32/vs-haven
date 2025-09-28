@@ -79,8 +79,9 @@ public class AABBList {
   /// </summary>
   /// <param name="with"></param>
   /// <param name="withOffset">an offset to translate other when doing the
-  /// intersection</param> <returns>the intersecting AABB from this AABB list
-  /// that intersects, or null if there is no intersection</returns>
+  /// intersection</param>
+  /// <returns>the intersecting AABB from this AABB list that intersects, or
+  /// null if there is no intersection</returns>
   public Cuboidi Intersects(Cuboidi with, Vec3i withOffset) {
     foreach (Cuboidi region in Regions) {
       if (region.Intersects(with, withOffset)) {
@@ -95,16 +96,55 @@ public class AABBList {
   /// </summary>
   /// <param name="with"></param>
   /// <param name="withOffset">an offset to translate other when doing the
-  /// intersection</param> <returns>the intersecting AABB from this AABB list
-  /// that intersects, or null if there is no intersection</returns>
+  /// intersection</param>
+  /// <returns>the intersecting AABB from `with` that intersects, or null if
+  /// there is no intersection</returns>
   public Cuboidi Intersects(AABBList with, Vec3i withOffset) {
     foreach (Cuboidi withRegion in with.Regions) {
       Cuboidi intersection = Intersects(withRegion, withOffset);
       if (intersection != null) {
-        return intersection;
+        return withRegion;
       }
     }
     return null;
+  }
+
+  /// <summary>
+  /// Moves withOffset in direction to avoid an intersection with another
+  /// schematic
+  /// </summary>
+  /// <param name="with"></param>
+  /// <param name="withOffset"></param>
+  /// <param name="direction">direction to move with to avoid an
+  /// intersection. This should be a unit vector</param>
+  /// <returns>true if there was no intersection, or false if withOffset was
+  /// updated to avoid an intersection</returns>
+  public bool AvoidIntersection(AABBList with, Vec3i withOffset,
+                                Vec3d direction) {
+    double distance = 0.0;
+    Vec3i initialOffset = withOffset.Clone();
+    while (true) {
+      Cuboidi withCube = Intersects(with, withOffset);
+      if (withCube == null) {
+        return distance == 0.0;
+      }
+      distance += 1;
+      withOffset.X = (int)(initialOffset.X + direction.X * distance);
+      withOffset.Y = (int)(initialOffset.Y + direction.Y * distance);
+      withOffset.Z = (int)(initialOffset.Z + direction.Z * distance);
+      while (true) {
+        Cuboidi myCube = Intersects(withCube, withOffset);
+        if (myCube == null) {
+          break;
+        }
+        do {
+          distance += 1;
+          withOffset.X = (int)(initialOffset.X + direction.X * distance);
+          withOffset.Y = (int)(initialOffset.Y + direction.Y * distance);
+          withOffset.Z = (int)(initialOffset.Z + direction.Z * distance);
+        } while (myCube.Intersects(withCube, withOffset));
+      }
+    }
   }
 
   private static bool TryGrowX(Cuboidi region, bool grow,

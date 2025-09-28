@@ -165,4 +165,42 @@ public class AABBList {
     Real.AABBList aabb = new(blocks);
     Assert.HasCount(2, aabb.Regions);
   }
+
+  [TestMethod]
+  public void AvoidIntersectionNoIntersection() {
+    Real.AABBList cube =
+        new(MakeCube(new BlockPos(1, 1, 1), new BlockPos(3, 4, 5)));
+    Assert.IsTrue(
+        cube.AvoidIntersection(cube, new Vec3i(100, 0, 0), new Vec3d(1, 0, 0)));
+  }
+
+  [TestMethod]
+  public void AvoidIntersectionOverlappingCube() {
+    Real.AABBList cube =
+        new(MakeCube(new BlockPos(1, 2, 3), new BlockPos(4, 5, 6)));
+    Vec3i offset = new(0, 1, 0);
+    Assert.IsFalse(cube.AvoidIntersection(cube, offset, new Vec3d(1, 0, 0)));
+    Assert.IsNull(cube.Intersects(cube, offset));
+    Assert.IsGreaterThan(0, offset.X);
+    Assert.AreEqual(1, offset.Y);
+    Assert.AreEqual(0, offset.Z);
+
+    Assert.IsNotNull(
+        cube.Intersects(cube, new Vec3i(offset.X - 1, offset.Y, offset.Z)));
+  }
+
+  [TestMethod]
+  public void AvoidIntersectionOverlappingSphere() {
+    Real.AABBList sphere = new(MakeSphere(new BlockPos(1, 2, 3), 3));
+    Vec3i offset = new(0, 1, 0);
+    Assert.IsFalse(
+        sphere.AvoidIntersection(sphere, offset, new Vec3d(1, 0, 0)));
+    Assert.IsNull(sphere.Intersects(sphere, offset));
+    Assert.IsGreaterThan(0, offset.X);
+    Assert.AreEqual(1, offset.Y);
+    Assert.AreEqual(0, offset.Z);
+
+    Assert.IsNotNull(
+        sphere.Intersects(sphere, new Vec3i(offset.X - 1, offset.Y, offset.Z)));
+  }
 }

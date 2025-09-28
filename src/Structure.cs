@@ -10,6 +10,77 @@ namespace Haven;
 public class OffsetBlockSchematic : BlockSchematic {
   [JsonProperty]
   public int OffsetY = 0;
+
+  public AABBList _outline = null;
+
+  public void UpdateOutline() {
+    _outline = new AABBList(GetJustPositions(new BlockPos(0, 0, 0)));
+  }
+
+  public Cuboidi GetOffsetBoundingBox(BlockPos startPos) {
+    Cuboidi result =
+        new Cuboidi(startPos, startPos.AddCopy(SizeX, SizeY, SizeZ));
+    result.Y1 += OffsetY;
+    result.Y2 += OffsetY;
+    return result;
+  }
+
+  /// <summary>
+  /// Determines if there is an intersection between two schematics.
+  /// </summary>
+  /// <param name="startPos">the start location of this schematic</param>
+  /// <param name="with">the other schematic to perform the intersection test
+  /// with</param>
+  /// <param name="withStartPos">the start location of the other
+  /// schematic</param>
+  /// <returns>a cuboid from the other schematic that intersects with this one,
+  /// or null.</returns>
+  public Cuboidi Intersects(BlockPos startPos, OffsetBlockSchematic with,
+                            BlockPos withStartPos) {
+    Vec3i withOffset = withStartPos.SubCopy(startPos).AsVec3i;
+    withOffset.Y += with.OffsetY - OffsetY;
+    if (!GetOffsetBoundingBox(startPos).Intersects(
+            with.GetOffsetBoundingBox(withStartPos))) {
+      return null;
+    }
+    Cuboidi result = _outline.Intersects(with._outline, withOffset);
+    if (result == null) {
+      return result;
+    }
+    return result.OffsetCopy(0, with.OffsetY, 0);
+  }
+
+  /// <summary>
+  /// Moves startPos in direction to avoid an intersection with another
+  /// schematic
+  /// </summary>
+  /// <param name="startPos"></param>
+  /// <param name="with"></param>
+  /// <param name="withStartPos"></param>
+  /// <param name="direction">direction to move the schematic to avoid an
+  /// intersection. This should be a unit vector</param>
+  /// <returns>true if there was no intersection, or false if startPos was
+  /// updated to avoid an intersection</returns>
+  public bool AvoidIntersection(BlockPos startPos, OffsetBlockSchematic with,
+                                BlockPos withStartPos, Vec3d direction) {
+    Vec3i withOffset = withStartPos.SubCopy(startPos).AsVec3i;
+    withOffset.Y += with.OffsetY - OffsetY;
+    if (!GetOffsetBoundingBox(startPos).Intersects(
+            with.GetOffsetBoundingBox(withStartPos))) {
+      return true;
+    }
+    if (_outline.AvoidIntersection(with._outline, withOffset, direction * -1)) {
+      return true;
+    }
+    withOffset.Y -= with.OffsetY - OffsetY;
+    withOffset.X -= withStartPos.X;
+    withOffset.Y -= withStartPos.Y;
+    withOffset.Z -= withStartPos.Z;
+    startPos.X = -withOffset.X;
+    startPos.Y = -withOffset.Y;
+    startPos.Z = -withOffset.Z;
+    return false;
+  }
 }
 
 public class SchematicData {
@@ -27,6 +98,7 @@ public class SchematicData {
       return null;
     }
     resolved.OffsetY = OffsetY;
+    resolved.UpdateOutline();
     return resolved;
   }
 }

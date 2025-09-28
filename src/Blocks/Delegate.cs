@@ -103,8 +103,8 @@ public class Delegate : BlockGeneric {
   /// </summary>
   /// <param name="block">the block to traverse</param>
   /// <param name="callBehavior">delegate to run on every behavior on the block
-  /// (unless handled says to end the traversal early)</param> <param
-  /// name="callBlock">delegate to handle the block's default behavior. The
+  /// (unless handled says to end the traversal early)</param>
+  /// <param name="callBlock">delegate to handle the block's default behavior. The
   /// block behaviors can skip this by setting handled appropriately.</param>
   /// <param name="handled">the final handled value, often from which ever
   /// behavior ran last.</param>
