@@ -164,4 +164,43 @@ public class ResourceZonePlan {
             $"({minPlace.X}, {minPlace.Y}) and max count ({max}) at " +
             $"({maxPlace.X}, {maxPlace.Y}) is greater than expected");
   }
+
+  [TestMethod]
+  public void ExpandRadiusIfNecessary() {
+    List<Real.Structure> structures =
+        [Structure.Load("stone"), Structure.Load("cattailtops")];
+    List<Real.OffsetBlockSchematic> schematics = [];
+    NormalRandom rand = new(0);
+    while (schematics.Count < 5) {
+      foreach (Real.Structure structure in structures) {
+        schematics.AddRange(
+            structure.Select(Framework.Server.AssetManager, rand));
+      }
+    }
+    double minRadius = 1;
+    BlockPos center = new(10000, 100, 10000);
+    // Purposely use minRadius=1 to force a bunch of overlaps.
+    Real.ResourceZonePlan plan = new(center, minRadius, rand, schematics);
+    Assert.AreEqual(center, plan.Center);
+    Assert.IsGreaterThan(2, plan.Radius);
+    Assert.IsLessThan(100, plan.Radius);
+
+    // Verify all of the structures fit within the final zone radius.
+    Real.AABBList zone = AABBList.MakeCylinder(center, plan.Radius, 1000);
+    foreach (KeyValuePair<BlockPos, OffsetBlockSchematic> structure in plan
+                 .Structures) {
+      Assert.IsTrue(
+          zone.Contains(structure.Value.Outline, structure.Key.AsVec3i));
+    }
+
+    // Verify that none of the structures intersect with each other.
+    var placedStructures = plan.Structures.ToList();
+    for (int i = 0; i < placedStructures.Count; ++i) {
+      for (int j = 0; j < i; ++j) {
+        Assert.IsNull(placedStructures[i].Value.Intersects(
+            placedStructures[i].Key, placedStructures[j].Value,
+            placedStructures[j].Key));
+      }
+    }
+  }
 }

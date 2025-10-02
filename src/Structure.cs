@@ -11,10 +11,10 @@ public class OffsetBlockSchematic : BlockSchematic {
   [JsonProperty]
   public int OffsetY = 0;
 
-  public AABBList _outline = null;
+  public AABBList Outline { get; private set; }
 
   public void UpdateOutline() {
-    _outline = new AABBList(GetJustPositions(new BlockPos(0, 0, 0)));
+    Outline = new AABBList(GetJustPositions(new BlockPos(0, 0, 0)));
   }
 
   public Cuboidi GetOffsetBoundingBox(BlockPos startPos) {
@@ -43,7 +43,7 @@ public class OffsetBlockSchematic : BlockSchematic {
             with.GetOffsetBoundingBox(withStartPos))) {
       return null;
     }
-    Cuboidi result = _outline.Intersects(with._outline, withOffset);
+    Cuboidi result = Outline.Intersects(with.Outline, withOffset);
     if (result == null) {
       return result;
     }
@@ -69,7 +69,7 @@ public class OffsetBlockSchematic : BlockSchematic {
             with.GetOffsetBoundingBox(withStartPos))) {
       return true;
     }
-    if (_outline.AvoidIntersection(with._outline, withOffset, direction * -1)) {
+    if (Outline.AvoidIntersection(with.Outline, withOffset, direction * -1)) {
       return true;
     }
     withOffset.Y -= with.OffsetY - OffsetY;

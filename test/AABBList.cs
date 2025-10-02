@@ -8,7 +8,7 @@ namespace Haven.Test;
 
 [PrefixTestClass]
 public class AABBList {
-  private List<BlockPos> MakeSphere(BlockPos center, double radius) {
+  private static List<BlockPos> MakeSphere(BlockPos center, double radius) {
     List<BlockPos> result = [];
     for (int x = (int)(center.X - radius); x <= (int)(center.X + radius); ++x) {
       for (int y = (int)(center.Y - radius); y <= (int)(center.Y + radius);
@@ -21,6 +21,23 @@ public class AABBList {
         }
       }
     }
+    return result;
+  }
+
+  public static Real.AABBList MakeCylinder(BlockPos center, double radius,
+                                           double height) {
+    List<BlockPos> circle = [];
+    for (int x = (int)(center.X - radius); x <= (int)(center.X + radius); ++x) {
+      for (int z = (int)(center.Z - radius); z <= (int)(center.Z + radius);
+           ++z) {
+        if (center.DistanceSqTo(x, center.Y, z) <= radius * radius) {
+          circle.Add(new BlockPos(x, center.Y, z));
+        }
+      }
+    }
+    Real.AABBList result = new(circle);
+    result.GrowUp((int)(height / 2) + 1);
+    result.GrowDown((int)(height / 2) + 1);
     return result;
   }
 
@@ -202,5 +219,25 @@ public class AABBList {
 
     Assert.IsNotNull(
         sphere.Intersects(sphere, new Vec3i(offset.X - 1, offset.Y, offset.Z)));
+  }
+
+  [TestMethod]
+  public void CubeExactlyContains() {
+    Real.AABBList cube =
+        new(MakeCube(new BlockPos(1, 1, 1), new BlockPos(3, 4, 5)));
+    Assert.IsTrue(cube.Contains(cube, new Vec3i(0, 0, 0)));
+  }
+
+  [TestMethod]
+  public void CubeExactlyContainsWithOffset() {
+    Real.AABBList cube1 =
+        new(MakeCube(new BlockPos(1, 1, 1), new BlockPos(3, 4, 5)));
+    Vec3i offset = new(10, 11, 12);
+    Real.AABBList cube2 =
+        new(MakeCube(new BlockPos(1 - offset.X, 1 - offset.Y, 1 - offset.Z),
+                     new BlockPos(3 - offset.X, 4 - offset.Y, 5 - offset.Z)));
+
+    Assert.IsFalse(cube1.Contains(cube2, new Vec3i(0, 0, 0)));
+    Assert.IsTrue(cube1.Contains(cube2, offset));
   }
 }
