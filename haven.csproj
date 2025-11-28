@@ -71,6 +71,10 @@
             <HintPath>$(VINTAGE_STORY)/Lib/Newtonsoft.Json.dll</HintPath>
             <Private>false</Private>
         </Reference>
+        <Reference Include="protobuf-net">
+            <HintPath>$(VINTAGE_STORY)/Lib/protobuf-net.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
 
         <!-- Import the JsonPeek Nuget package, because it provides the JsonPeek build task that is used later. -->
         <PackageReference Include="JsonPeek" Version="1.2.0" />
