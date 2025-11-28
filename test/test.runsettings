@@ -3,4 +3,10 @@
   <TestRunParameters>
     <Parameter name="ResourcesPath" value="--debug message: XMLPoke target needs to run--" />
   </TestRunParameters>
+
+  <MSTest>
+    <AssemblyResolution>
+      <Directory path="%VINTAGE_STORY%/" includeSubDirectories="false"/>
+    </AssemblyResolution>
+  </MSTest>
 </RunSettings>

@@ -50,8 +50,12 @@ public class FilterOrigin : IAssetOrigin {
 class ServerApiWithAssets {
   public static string HavenResourcesPath {
     get {
-      string path = AppDomain.CurrentDomain.BaseDirectory;
-      return Path.Join(path, "..", "..", "..", "..", "resources");
+      string path = File.ReadAllText("resourcespath.txt").Trim();
+      int length = path.Length;
+      if (length > 2 && path[0] == '"' && path[length - 1] == '"') {
+        path = path.Substring(1, length - 2);
+      }
+      return path;
     }
   }
 
