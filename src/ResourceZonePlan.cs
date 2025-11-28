@@ -2,26 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 
 namespace Haven;
 
 public class ResourceZonePlan {
-  public class ChunkColumnStatus {
-    /// <summary>
-    /// Indicates whether this column has alread been generated. If it has been
-    /// generated, then new structures cannot be moved into this chunk if the
-    /// plan needs to be adjusted for some reason.
-    /// </summary>
-    internal bool Generated = false;
-    /// <summary>
-    /// The list of structures that need to be generated in this chunk column.
-    /// Each entry is a structure start position, which also serves as a key to
-    /// Structures.
-    /// </summary>
-    internal List<BlockPos> StructureStarts = new();
-  }
   public BlockPos Center { get; private set; }
   public double Radius { get; private set; }
   private readonly Dictionary<BlockPos, OffsetBlockSchematic> _structures =
@@ -29,22 +14,6 @@ public class ResourceZonePlan {
   public IReadOnlyDictionary<BlockPos, OffsetBlockSchematic> Structures {
     get { return _structures; }
   }
-  private readonly Dictionary<Vec2i, ChunkColumnStatus> _chunkColumns = new();
-  /// <summary>
-  /// This is a sparse dictionary of the status of the chunk columns. It is
-  /// indexed by chunk coordinates (block x z position divided by 32). If a
-  /// column is missing from the dictionary, that means that either it has not
-  /// been generated yet and will not have any structures in it, or the column
-  /// is not part of the resource zone.
-  /// </summary>
-  public IReadOnlyDictionary<Vec2i, ChunkColumnStatus> ChunkColumns {
-    get { return _chunkColumns; }
-  }
-  /// <summary>
-  /// The number of chunk columns that still need to be generated and contain
-  /// part of a structure.
-  /// </summary>
-  private int _remainingColumns = 0;
 
   /// <summary>
   /// Construct a resource zone plan. The initial plan lays out the structures
@@ -136,36 +105,6 @@ public class ResourceZonePlan {
       _structures[iPos] = placement[i].Value;
       ExpandRadiusIfNecessary(iPos, placement[i].Value);
     }
-
-    InitializeChunkColumns();
-  }
-
-  /// <summary>
-  /// Initialize _chunkColumns. _structures must be initialized beforehand.
-  /// </summary>
-  private void InitializeChunkColumns() {
-    Debug.Assert(_chunkColumns.Count == 0);
-    foreach (KeyValuePair<BlockPos, OffsetBlockSchematic> structure in
-                 _structures) {
-      int minX = structure.Key.X / GlobalConstants.ChunkSize;
-      int maxX = structure.Key.Z / GlobalConstants.ChunkSize;
-      int minZ =
-          (structure.Key.X + structure.Value.SizeX) / GlobalConstants.ChunkSize;
-      int maxZ =
-          (structure.Key.Z + structure.Value.SizeZ) / GlobalConstants.ChunkSize;
-      for (int z = minZ; z <= maxZ; ++z) {
-        for (int x = minX; x <= maxX; ++x) {
-          Vec2i chunkKey = new(x, z);
-          if (!_chunkColumns.TryGetValue(chunkKey,
-                                         out ChunkColumnStatus status)) {
-            status = new();
-            _chunkColumns.Add(chunkKey, status);
-          }
-          status.StructureStarts.Add(structure.Key);
-        }
-      }
-    }
-    _remainingColumns = _chunkColumns.Count;
   }
 
   /// <summary>
