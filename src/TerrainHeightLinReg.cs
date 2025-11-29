@@ -82,7 +82,7 @@ public class TerrainHeightLinReg {
   // calculated:
   // | y^2 coord sum |
   //
-  // 
+  //
   // variance(y) can be calculated with the population variance shortcut
   // formula:
   //   variance(y) = (y^2 coord sum)/num_samples - (y coord sum/num_samples)^2
@@ -104,7 +104,7 @@ public class TerrainHeightLinReg {
   private Int128 _yzSum = 0;
   private Int128 _zzSum = 0;
 
-  public TerrainHeightLinReg() { }
+  public TerrainHeightLinReg() {}
 
   public void Add(int x, int y, int z) {
     ++_numSamples;
@@ -226,9 +226,8 @@ public class TerrainHeightLinReg {
   public double ResidualSumOfSquares {
     get {
       (double intercept, double xparam, double zparam) = Beta;
-      return
-          (double)_yySum - (_ySum * intercept + (double)_xySum * xparam +
-                            (double)_yzSum * zparam);
+      return (double)_yySum - (_ySum * intercept + (double)_xySum * xparam +
+                               (double)_yzSum * zparam);
     }
   }
 
@@ -262,7 +261,8 @@ public class TerrainHeightLinReg {
       if (_numSamples == 0) {
         return 1;
       }
-      double totalSumOfSquares = (double)_yySum - (double)(_ySum * _ySum) / _numSamples;
+      double totalSumOfSquares =
+          (double)_yySum - (double)(_ySum * _ySum) / _numSamples;
       if (totalSumOfSquares == 0) {
         return 1;
       }

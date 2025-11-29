@@ -85,6 +85,13 @@ public class SquareSpiral {
     };
   }
 
+  public Vec2i GetSquareOffset() {
+    Vec2i offset = GetOffset();
+    offset.X *= offset.X;
+    offset.Y *= offset.Y;
+    return offset;
+  }
+
   public void Next() { ++_index; }
 
   public SquareSpiral() {}
