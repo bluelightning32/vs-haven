@@ -52,18 +52,28 @@ public class TerrainSurvey {
 
   public ChunkColumnSurvey GetColumn(IBlockAccessor accessor, Vec2i pos) {
     if (_chunks.TryGetValue(pos, out ChunkColumnSurvey result)) {
+      if (result.Stats.Roughness == -1) {
+        // The neighbors were not available when this chunk was first loaded.
+        // Try again now.
+        _chunks.TryGetValue(new Vec2i(pos.X - 1, pos.Y),
+                            out ChunkColumnSurvey west);
+        _chunks.TryGetValue(new Vec2i(pos.X, pos.Y - 1),
+                            out ChunkColumnSurvey north);
+        result.CalculateRoughness(west, north);
+      }
+      return result;
+    } else {
+      _chunks.TryGetValue(new Vec2i(pos.X - 1, pos.Y),
+                          out ChunkColumnSurvey west);
+      _chunks.TryGetValue(new Vec2i(pos.X, pos.Y - 1),
+                          out ChunkColumnSurvey north);
+      result = ChunkColumnSurvey.Create(accessor, _reader, pos.X, pos.Y, west,
+                                        north);
+      if (result != null) {
+        _chunks.Add(pos, result);
+      }
       return result;
     }
-    _chunks.TryGetValue(new Vec2i(pos.X - 1, pos.Y),
-                        out ChunkColumnSurvey west);
-    _chunks.TryGetValue(new Vec2i(pos.X, pos.Y - 1),
-                        out ChunkColumnSurvey north);
-    result =
-        ChunkColumnSurvey.Create(accessor, _reader, pos.X, pos.Y, west, north);
-    if (result != null) {
-      _chunks.Add(pos, result);
-    }
-    return result;
   }
 
   /// <summary>
@@ -174,6 +184,9 @@ public class TerrainSurvey {
       ChunkColumnSurvey chunk = GetColumn(accessor, new Vec2i(x, chunkZ));
       if (chunk != null) {
         results.Add(chunk.Stats);
+        if (chunk.Stats.Roughness == -1) {
+          incomplete = true;
+        }
       } else {
         incomplete = true;
       }

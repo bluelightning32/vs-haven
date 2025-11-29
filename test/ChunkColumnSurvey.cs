@@ -14,24 +14,44 @@ public class ChunkColumnSurvey {
   public void NorthNeighborMissing() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, 100, 1, 1);
+    reader.FillChunk(1, 1, Climate.Sealevel, 0, 0);
     // Fill west chunk
-    reader.FillChunk(0, 1, 100, 1, 1);
-    Assert.IsNull(
-        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null));
+    reader.FillChunk(0, 1, Climate.Sealevel, 0, 0);
+    Real.ChunkColumnSurvey survey =
+        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
+    Assert.IsNotNull(survey);
+    Assert.AreEqual(-1, survey.Stats.Roughness);
     Assert.IsTrue(reader.WasChunkRequested(1, 0));
+    Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
+                    survey.Stats.AboveSea);
+
+    Real.ChunkColumnSurvey west =
+        Real.ChunkColumnSurvey.Create(null, reader, 0, 1, null, null);
+    survey.CalculateRoughness(west, null);
+    Assert.AreEqual(-1, survey.Stats.Roughness);
+
+    // Fill north chunk
+    reader.FillChunk(1, 0, Climate.Sealevel, 0, 0);
+    Real.ChunkColumnSurvey north =
+        Real.ChunkColumnSurvey.Create(null, reader, 1, 0, null, null);
+    survey.CalculateRoughness(west, north);
+    Assert.AreEqual(0, survey.Stats.Roughness);
   }
 
   [TestMethod]
   public void WestNeighborMissing() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, 100, 1, 1);
+    reader.FillChunk(1, 1, Climate.Sealevel, 1, 1);
     // Fill north chunk
-    reader.FillChunk(1, 0, 100, 1, 1);
-    Assert.IsNull(
-        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null));
+    reader.FillChunk(1, 0, Climate.Sealevel, 1, 1);
+    Real.ChunkColumnSurvey survey =
+        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
+    Assert.IsNotNull(survey);
+    Assert.AreEqual(-1, survey.Stats.Roughness);
     Assert.IsTrue(reader.WasChunkRequested(0, 1));
+    Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
+                    survey.Stats.AboveSea);
   }
 
   [TestMethod]

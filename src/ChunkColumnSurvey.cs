@@ -11,6 +11,8 @@ namespace Haven;
 public struct TerrainStats {
   /// <summary>
   /// The sum of the X and Z step heights for all surface blocks in the area.
+  /// This is set to -1 if the roughness could not be calculated because a
+  /// neighbor chunk was not loaded.
   /// </summary>
   [ProtoMember(1)]
   public int Roughness = 0;
@@ -23,7 +25,9 @@ public struct TerrainStats {
   public TerrainStats() {}
 
   public void Add(TerrainStats stats) {
-    Roughness += stats.Roughness;
+    if ((Roughness | stats.Roughness) != -1) {
+      Roughness += stats.Roughness;
+    }
     AboveSea += stats.AboveSea;
   }
 }
@@ -31,7 +35,10 @@ public struct TerrainStats {
 [ProtoContract]
 public class ChunkColumnSurvey {
   [ProtoMember(1)]
-  public readonly TerrainStats Stats;
+  private TerrainStats _stats = new();
+  public TerrainStats Stats {
+    get { return _stats; }
+  }
 
   /// <summary>
   /// The height of every surface block in the chunk
@@ -42,11 +49,27 @@ public class ChunkColumnSurvey {
   private ChunkColumnSurvey(ushort[] heights, ushort[] westHeights,
                             ushort[] northHeights) {
     Heights = heights;
+    const int chunkBlocks =
+        GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
+    for (int offset = 0; offset < chunkBlocks; ++offset) {
+      if (heights[offset] >= Climate.Sealevel) {
+        ++_stats.AboveSea;
+      }
+    }
+    CalculateRoughness(westHeights, northHeights);
+  }
+
+  private void CalculateRoughness(ushort[] westHeights, ushort[] northHeights) {
+    if (westHeights == null || northHeights == null) {
+      _stats.Roughness = -1;
+      return;
+    }
+    _stats.Roughness = 0;
     // Calculate the roughness of the northern border.
     for (int offset = 0, northOffset = (GlobalConstants.ChunkSize - 1) *
                                        GlobalConstants.ChunkSize;
          offset < GlobalConstants.ChunkSize; ++offset, ++northOffset) {
-      Stats.Roughness += Math.Abs(northHeights[northOffset] - heights[offset]);
+      _stats.Roughness += Math.Abs(northHeights[northOffset] - Heights[offset]);
     }
     const int chunkBlocks =
         GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
@@ -54,23 +77,18 @@ public class ChunkColumnSurvey {
     for (int offset = 0, westOffset = GlobalConstants.ChunkSize - 1;
          offset < chunkBlocks; offset += GlobalConstants.ChunkSize,
              westOffset += GlobalConstants.ChunkSize) {
-      Stats.Roughness += Math.Abs(westHeights[westOffset] - heights[offset]);
+      _stats.Roughness += Math.Abs(westHeights[westOffset] - Heights[offset]);
     }
     // Calculate the west-east roughness inside the chunk
     for (int offset = 0; offset < chunkBlocks; ++offset) {
       for (int x = 1; x < GlobalConstants.ChunkSize; ++x, ++offset) {
-        Stats.Roughness += Math.Abs(Heights[offset] - heights[offset + 1]);
+        _stats.Roughness += Math.Abs(Heights[offset] - Heights[offset + 1]);
       }
     }
     // Calculate the north-south roughness inside the chunk
     for (int offset1 = 0, offset2 = GlobalConstants.ChunkSize;
          offset2 < chunkBlocks; ++offset1, ++offset2) {
-      Stats.Roughness += Math.Abs(Heights[offset1] - heights[offset2]);
-    }
-    for (int offset = 0; offset < chunkBlocks; ++offset) {
-      if (heights[offset] >= Climate.Sealevel) {
-        ++Stats.AboveSea;
-      }
+      _stats.Roughness += Math.Abs(Heights[offset1] - Heights[offset2]);
     }
   }
 
@@ -102,8 +120,8 @@ public class ChunkColumnSurvey {
   /// survey is not completed yet
   /// </param>
   /// <returns>
-  /// a completed chunk survey, or null if the block accessor does not have one
-  /// of the necessary chunks loaded
+  /// a chunk survey with everything filled in except for possibly the
+  /// Roughness, or null if the block accessor cannot currently load the chunk
   /// </returns>
   public static ChunkColumnSurvey Create(IBlockAccessor accessor,
                                          ITerrainHeightReader reader,
@@ -123,12 +141,28 @@ public class ChunkColumnSurvey {
       northHeights = reader.GetHeights(accessor, chunkX, chunkZ - 1);
     }
     ushort[] heights = reader.GetHeights(accessor, chunkX, chunkZ);
+
     // All of the chunk heights are requested above, even if some of the heights
     // are null. This is because GetHeights can trigger loading the chunks, and
     // all chunk load requests should be triggered in one pass.
-    if (westHeights == null || northHeights == null || heights == null) {
+    if (heights == null) {
       return null;
     }
     return new ChunkColumnSurvey(heights, westHeights, northHeights);
+  }
+
+  /// <summary>
+  /// Calculates the chunk roughness if the neighbor data was not available when
+  /// the survey was first created.
+  /// </summary>
+  /// <param name="accessor"></param>
+  /// <param name="reader"></param>
+  /// <param name="chunkX"></param>
+  /// <param name="chunkZ"></param>
+  /// <param name="westNeighbor"></param>
+  /// <param name="northNeighbor"></param>
+  public void CalculateRoughness(ChunkColumnSurvey westNeighbor,
+                                 ChunkColumnSurvey northNeighbor) {
+    CalculateRoughness(westNeighbor?.Heights, northNeighbor?.Heights);
   }
 }

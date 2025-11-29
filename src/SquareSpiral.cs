@@ -19,7 +19,7 @@ namespace Haven;
 [ProtoContract]
 public class SquareSpiral {
   [ProtoMember(1)]
-  private int _index = 0;
+  public int Index { get; private set; } = 0;
 
   /// <summary>
   /// Returns the number of blocks in a round, for a round > 0
@@ -64,16 +64,16 @@ public class SquareSpiral {
     // S_n = 4n^2 - 4n + 1 = ((2 * n) - 1)^2
     // (2 * n) - 1 = sqrt(S_n)
     // n = (sqrt(S_n) + 1) / 2
-    return ((int)Math.Sqrt(_index) + 1) / 2;
+    return ((int)Math.Sqrt(Index) + 1) / 2;
   }
 
   public Vec2i GetOffset() {
-    if (_index == 0) {
+    if (Index == 0) {
       return Vec2i.Zero;
     }
     int round = GetRound();
     int roundStart = GetRoundStart(round);
-    int indexOffset = _index - roundStart + round;
+    int indexOffset = Index - roundStart + round;
     // dirIndex is in the range [0, 4].
     int dirIndex = indexOffset / (round << 1);
     int sideOffset = indexOffset - dirIndex * (round << 1) - round;
@@ -92,7 +92,7 @@ public class SquareSpiral {
     return offset;
   }
 
-  public void Next() { ++_index; }
+  public void Next() { ++Index; }
 
   public SquareSpiral() {}
 }
