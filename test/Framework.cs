@@ -14,6 +14,18 @@ public class Framework {
   public TestContext TestContext { get; set; } = null!;
   public static ServerMain Server = null;
 
+  /// <summary>
+  /// For performance reasons, all of the unit tests share the same game world
+  /// (it is not reloaded between unit tests). This is the X coordinate of a
+  /// chunk column that none of the unit tests should not be loaded by any of
+  /// the tests.
+  /// </summary>
+  public const int UnloadedMapChunkX = 1005;
+  /// <summary>
+  /// Z coordinate of the unloaded chunk column.
+  /// </summary>
+  public const int UnloadedMapChunkZ = 1007;
+
   [AssemblyInitialize()]
   public static void AssemblyInitialize(TestContext context) {
     Dictionary<AssetCategory, HashSet<string>> allow =
@@ -81,7 +93,7 @@ public class Framework {
     chunk.MarkModified();
 
     // UnloadChunkColumn arguably has a bug where it skips saving the chunk
-    // befor unloading it. So save all of the dirty chunks before unloading the
+    // before unloading it. So save all of the dirty chunks before unloading the
     // chunk so that the chunk modification above is not lost.
     Server.SaveGameInline();
     sapi.WorldManager.UnloadChunkColumn(0, 0);

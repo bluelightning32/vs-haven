@@ -12,7 +12,10 @@ public interface IChunkLoader {
   /// the same chunk column.
   /// </summary>
   /// <param name="pos">A block X Z position (not chunk index)</param>
-  void LoadChunkColumnByBlockXZ(Vec2i pos);
+  void LoadChunkColumnByBlockXZ(int blockX, int blockZ) {
+    LoadChunkColumn(blockX / GlobalConstants.ChunkSize,
+                    blockZ / GlobalConstants.ChunkSize);
+  }
 
   /// <summary>
   /// Triggers the requested chunk column to be asynchronously loaded. The
