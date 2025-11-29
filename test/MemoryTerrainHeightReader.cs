@@ -20,17 +20,6 @@ public class MemoryTerrainHeightReader : ITerrainHeightReader {
 
   public void ClearRequestedChunks() { _requestedChunks.Clear(); }
 
-  public int GetHeight(IBlockAccessor accessor, Vec2i pos) {
-    ushort[] heights = GetHeights(accessor, pos.X / GlobalConstants.ChunkSize,
-                                  pos.Y / GlobalConstants.ChunkSize);
-    if (heights == null) {
-      return -1;
-    }
-    return heights[pos.X % GlobalConstants.ChunkSize +
-                   pos.Y % GlobalConstants.ChunkSize *
-                       GlobalConstants.ChunkSize];
-  }
-
   public ushort[] GetHeights(IBlockAccessor accessor, int chunkX, int chunkZ) {
     Vec2i key = new(chunkX, chunkZ);
     _requestedChunks.Add(key);
