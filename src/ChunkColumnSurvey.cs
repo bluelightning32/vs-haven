@@ -8,22 +8,30 @@ using Vintagestory.API.Config;
 namespace Haven;
 
 [ProtoContract]
-public class ChunkColumnSurvey {
+public struct TerrainStats {
   /// <summary>
-  /// The sum of the X and Z step heights for all surface blocks in the chunk
-  /// plus the north and west neighbors
+  /// The sum of the X and Z step heights for all surface blocks in the area.
   /// </summary>
   [ProtoMember(1)]
-  public readonly int TotalRoughness = 0;
+  public int Roughness = 0;
   /// <summary>
-  /// The number of surface blocks at or above sea level in the chunk
+  /// The number of surface blocks at or above sea level in the area
   /// </summary>
   [ProtoMember(2)]
-  public readonly int TotalAboveSea = 0;
+  public int AboveSea = 0;
+
+  public TerrainStats() {}
+}
+
+[ProtoContract]
+public class ChunkColumnSurvey {
+  [ProtoMember(1)]
+  public readonly TerrainStats Stats;
+
   /// <summary>
   /// The height of every surface block in the chunk
   /// </summary>
-  [ProtoMember(3)]
+  [ProtoMember(2)]
   public readonly ushort[] Heights;
 
   private ChunkColumnSurvey(ushort[] heights, ushort[] westHeights,
@@ -33,7 +41,7 @@ public class ChunkColumnSurvey {
     for (int offset = 0, northOffset = (GlobalConstants.ChunkSize - 1) *
                                        GlobalConstants.ChunkSize;
          offset < GlobalConstants.ChunkSize; ++offset, ++northOffset) {
-      TotalRoughness += Math.Abs(northHeights[northOffset] - heights[offset]);
+      Stats.Roughness += Math.Abs(northHeights[northOffset] - heights[offset]);
     }
     const int chunkBlocks =
         GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
@@ -41,22 +49,22 @@ public class ChunkColumnSurvey {
     for (int offset = 0, westOffset = GlobalConstants.ChunkSize - 1;
          offset < chunkBlocks; offset += GlobalConstants.ChunkSize,
              westOffset += GlobalConstants.ChunkSize) {
-      TotalRoughness += Math.Abs(westHeights[westOffset] - heights[offset]);
+      Stats.Roughness += Math.Abs(westHeights[westOffset] - heights[offset]);
     }
     // Calculate the west-east roughness inside the chunk
     for (int offset = 0; offset < chunkBlocks; ++offset) {
       for (int x = 1; x < GlobalConstants.ChunkSize; ++x, ++offset) {
-        TotalRoughness += Math.Abs(Heights[offset] - heights[offset + 1]);
+        Stats.Roughness += Math.Abs(Heights[offset] - heights[offset + 1]);
       }
     }
     // Calculate the north-south roughness inside the chunk
     for (int offset1 = 0, offset2 = GlobalConstants.ChunkSize;
          offset2 < chunkBlocks; ++offset1, ++offset2) {
-      TotalRoughness += Math.Abs(Heights[offset1] - heights[offset2]);
+      Stats.Roughness += Math.Abs(Heights[offset1] - heights[offset2]);
     }
     for (int offset = 0; offset < chunkBlocks; ++offset) {
       if (heights[offset] >= Climate.Sealevel) {
-        ++TotalAboveSea;
+        ++Stats.AboveSea;
       }
     }
   }

@@ -67,9 +67,9 @@ public class ChunkColumnSurvey {
     reader.FillChunk(1, 0, Climate.Sealevel, 0, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
-    Assert.AreEqual(0, survey.TotalRoughness);
+    Assert.AreEqual(0, survey.Stats.Roughness);
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.TotalAboveSea);
+                    survey.Stats.AboveSea);
   }
 
   [TestMethod]
@@ -84,9 +84,9 @@ public class ChunkColumnSurvey {
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.TotalRoughness);
+                    survey.Stats.Roughness);
     Assert.AreEqual((GlobalConstants.ChunkSize - 1) * GlobalConstants.ChunkSize,
-                    survey.TotalAboveSea);
+                    survey.Stats.AboveSea);
   }
 
   [TestMethod]
@@ -101,8 +101,8 @@ public class ChunkColumnSurvey {
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(2 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.TotalRoughness);
-    Assert.AreEqual(0, survey.TotalAboveSea);
+                    survey.Stats.Roughness);
+    Assert.AreEqual(0, survey.Stats.AboveSea);
   }
 
   [TestMethod]
@@ -117,9 +117,9 @@ public class ChunkColumnSurvey {
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(2 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.TotalRoughness);
+                    survey.Stats.Roughness);
     Assert.AreEqual((GlobalConstants.ChunkSize - 1) * GlobalConstants.ChunkSize,
-                    survey.TotalAboveSea);
+                    survey.Stats.AboveSea);
   }
 
   [TestMethod]
@@ -153,8 +153,8 @@ public class ChunkColumnSurvey {
     Real.ChunkColumnSurvey copy =
         SerializerUtil.Deserialize<Real.ChunkColumnSurvey>(data);
 
-    Assert.AreEqual(survey.TotalRoughness, copy.TotalRoughness);
-    Assert.AreEqual(survey.TotalAboveSea, copy.TotalAboveSea);
+    Assert.AreEqual(survey.Stats.Roughness, copy.Stats.Roughness);
+    Assert.AreEqual(survey.Stats.AboveSea, copy.Stats.AboveSea);
     Assert.AreEqual(survey.GetHeight(3, 5), copy.GetHeight(3, 5));
   }
 }
