@@ -2,6 +2,7 @@ using PrefixClassName.MsTest;
 
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
+using Vintagestory.API.Util;
 
 using Real = Haven;
 
@@ -135,5 +136,25 @@ public class ChunkColumnSurvey {
 
     Assert.AreEqual(200 + 0 * 1 + 0 * 2, survey.GetHeight(0, 0));
     Assert.AreEqual(200 + 5 * 1 + 7 * 2, survey.GetHeight(5, 7));
+  }
+
+  [TestMethod]
+  public void Serialization() {
+    MemoryTerrainHeightReader reader = new();
+    // Fill requested chunk
+    reader.FillChunk(1, 1, Climate.Sealevel - 1, 1, 0);
+    // Fill west chunk
+    reader.FillChunk(0, 1, Climate.Sealevel - 2, 0, 0);
+    // Fill north chunk
+    reader.FillChunk(1, 0, Climate.Sealevel - 1, 1, 0);
+    Real.ChunkColumnSurvey survey =
+        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
+    byte[] data = SerializerUtil.Serialize(survey);
+    Real.ChunkColumnSurvey copy =
+        SerializerUtil.Deserialize<Real.ChunkColumnSurvey>(data);
+
+    Assert.AreEqual(survey.TotalRoughness, copy.TotalRoughness);
+    Assert.AreEqual(survey.TotalAboveSea, copy.TotalAboveSea);
+    Assert.AreEqual(survey.GetHeight(3, 5), copy.GetHeight(3, 5));
   }
 }

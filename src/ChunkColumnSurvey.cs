@@ -104,6 +104,11 @@ public class ChunkColumnSurvey {
     }
   }
 
+  /// <summary>
+  /// Constructor for deserialization
+  /// </summary>
+  private ChunkColumnSurvey() {}
+
   public ushort GetHeight(int relX, int relZ) {
     return Heights[relZ * GlobalConstants.ChunkSize + relX];
   }
