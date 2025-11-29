@@ -21,6 +21,11 @@ public struct TerrainStats {
   public int AboveSea = 0;
 
   public TerrainStats() {}
+
+  public void Add(TerrainStats stats) {
+    Roughness += stats.Roughness;
+    AboveSea += stats.AboveSea;
+  }
 }
 
 [ProtoContract]
