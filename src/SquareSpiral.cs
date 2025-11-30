@@ -59,37 +59,43 @@ public class SquareSpiral {
     return (((round - 1) * round) << 2) | 1;
   }
 
-  private int GetRound() {
-    // Solving the round equation for n gives the round for a given index:
-    // S_n = 4n^2 - 4n + 1 = ((2 * n) - 1)^2
-    // (2 * n) - 1 = sqrt(S_n)
-    // n = (sqrt(S_n) + 1) / 2
-    return ((int)Math.Sqrt(Index) + 1) / 2;
-  }
-
-  public Vec2i GetOffset() {
-    if (Index == 0) {
-      return Vec2i.Zero;
+  private int Round {
+    get {
+      // Solving the round equation for n gives the round for a given index:
+      // S_n = 4n^2 - 4n + 1 = ((2 * n) - 1)^2
+      // (2 * n) - 1 = sqrt(S_n)
+      // n = (sqrt(S_n) + 1) / 2
+      return ((int)Math.Sqrt(Index) + 1) / 2;
     }
-    int round = GetRound();
-    int roundStart = GetRoundStart(round);
-    int indexOffset = Index - roundStart + round;
-    // dirIndex is in the range [0, 4].
-    int dirIndex = indexOffset / (round << 1);
-    int sideOffset = indexOffset - dirIndex * (round << 1) - round;
-    return dirIndex switch {
-      1 => new(-sideOffset, round),
-      2 => new(-round, -sideOffset),
-      3 => new(sideOffset, -round),
-      _ => new(round, sideOffset),
-    };
   }
 
-  public Vec2i GetSquareOffset() {
-    Vec2i offset = GetOffset();
-    offset.X *= offset.X;
-    offset.Y *= offset.Y;
-    return offset;
+  public Vec2i Offset {
+    get {
+      if (Index == 0) {
+        return Vec2i.Zero;
+      }
+      int round = Round;
+      int roundStart = GetRoundStart(round);
+      int indexOffset = Index - roundStart + round;
+      // dirIndex is in the range [0, 4].
+      int dirIndex = indexOffset / (round << 1);
+      int sideOffset = indexOffset - dirIndex * (round << 1) - round;
+      return dirIndex switch {
+        1 => new(-sideOffset, round),
+        2 => new(-round, -sideOffset),
+        3 => new(sideOffset, -round),
+        _ => new(round, sideOffset),
+      };
+    }
+  }
+
+  public Vec2i SquareOffset {
+    get {
+      Vec2i offset = Offset;
+      offset.X *= offset.X;
+      offset.Y *= offset.Y;
+      return offset;
+    }
   }
 
   public void Next() { ++Index; }
