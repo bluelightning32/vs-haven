@@ -32,6 +32,7 @@ interface IWorldGenerator {
 /// sufficiently flat. The search is done in a spiral pattern from the given
 /// start location.
 /// </summary>
+[ProtoContract]
 public class FlatCircleLocator : IWorldGenerator {
   [ProtoMember(1)]
   private readonly Vec2i _start;
@@ -89,6 +90,11 @@ public class FlatCircleLocator : IWorldGenerator {
                           maxRoughnessArea * _circleArea);
     _minAboveSea = (int)(minAboveSea * _circleArea);
   }
+
+  /// <summary>
+  /// Constructor for deserialization
+  /// </summary>
+  private FlatCircleLocator() {}
 
   /// <summary>
   /// Call this to initialize the remaining fields after the object has been
