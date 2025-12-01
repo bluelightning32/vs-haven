@@ -23,7 +23,7 @@ public class Structure {
     // the structure must be configured to always return at least one schematic.
     Assert.IsGreaterThanOrEqualTo(1, stone.Count.avg - stone.Count.var);
     NormalRandom rand = new(0);
-    List<OffsetBlockSchematic> schematics =
+    List<Real.OffsetBlockSchematic> schematics =
         stone.Select(Framework.Server.AssetManager, rand).ToList();
     Assert.IsGreaterThanOrEqualTo(1, schematics.Count);
   }
@@ -42,36 +42,5 @@ public class Structure {
     }
     Assert.IsLessThanOrEqualTo(0.7 * attempts, count);
     Assert.IsGreaterThanOrEqualTo(0.3 * attempts, count);
-  }
-
-  [TestMethod]
-  public void Intersects() {
-    Real.Structure stone = Load("stone");
-    NormalRandom rand = new(0);
-    OffsetBlockSchematic schematic =
-        stone.Select(Framework.Server.AssetManager, rand).First();
-    BlockPos start = new(0, 0, 0);
-    Assert.IsNull(
-        schematic.Intersects(start, schematic, new BlockPos(1000, 0, 0)));
-    Cuboidi cube = schematic.Intersects(start, schematic, start);
-    Assert.IsNotNull(cube);
-  }
-
-  [TestMethod]
-  public void AvoidIntersection() {
-    Real.Structure stone = Load("stone");
-    NormalRandom rand = new(0);
-    OffsetBlockSchematic schematic =
-        stone.Select(Framework.Server.AssetManager, rand).First();
-
-    BlockPos start = new(0, 0, 0);
-    BlockPos otherStart = new(0, 0, 0);
-    Assert.IsFalse(schematic.AvoidIntersection(start, schematic, otherStart,
-                                               new Vec3d(0, 1, 0)));
-    Assert.IsGreaterThan(otherStart.Y, start.Y);
-    Assert.AreEqual(otherStart.X, start.X);
-    Assert.AreEqual(otherStart.Z, start.Z);
-
-    Assert.IsNull(schematic.Intersects(start, schematic, otherStart));
   }
 }

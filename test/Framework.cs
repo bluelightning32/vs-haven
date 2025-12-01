@@ -13,6 +13,9 @@ public class Framework {
   // https://learn.microsoft.com/en-us/visualstudio/test/how-to-create-a-data-driven-unit-test?view=vs-2022#add-a-testcontext-to-the-test-class
   public TestContext TestContext { get; set; } = null!;
   public static ServerMain Server = null;
+  public static ServerCoreAPI Api {
+    get { return (ServerCoreAPI)Server.Api; }
+  }
 
   /// <summary>
   /// For performance reasons, all of the unit tests share the same game world

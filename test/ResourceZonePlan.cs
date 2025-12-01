@@ -187,7 +187,7 @@ public class ResourceZonePlan {
 
     // Verify all of the structures fit within the final zone radius.
     Real.AABBList zone = AABBList.MakeCylinder(center, plan.Radius, 1000);
-    foreach (KeyValuePair<BlockPos, OffsetBlockSchematic> structure in plan
+    foreach (KeyValuePair<BlockPos, Real.OffsetBlockSchematic> structure in plan
                  .Structures) {
       Assert.IsTrue(
           zone.Contains(structure.Value.Outline, structure.Key.AsVec3i));
