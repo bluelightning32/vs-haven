@@ -189,6 +189,40 @@ public class AABBList {
   }
 
   /// <summary>
+  /// Return the tighest bounding box for all block positions within the given
+  /// cuboid.
+  /// </summary>
+  /// <param name="with">
+  /// region to check for blocks in
+  /// </param>
+  /// <returns>
+  /// the bounding box, or if nothing intersected, then a bounding box where
+  /// each first coordinate is larger than the second.
+  /// </returns>
+  public Cuboidi GetBoundingBoxForIntersection(Cuboidi with) {
+    Cuboidi result = new(int.MaxValue, int.MaxValue, int.MaxValue, int.MinValue,
+                         int.MinValue, int.MinValue);
+    foreach (Cuboidi region in Regions) {
+      if (!region.Intersects(with)) {
+        continue;
+      }
+      result.X1 = int.Min(result.X1, region.X1);
+      result.Y1 = int.Min(result.Y1, region.Y1);
+      result.Z1 = int.Min(result.Z1, region.Z1);
+      result.X2 = int.Max(result.X2, region.X2);
+      result.Y2 = int.Max(result.Y2, region.Y2);
+      result.Z2 = int.Max(result.Z2, region.Z2);
+    }
+    result.X1 = int.Max(result.X1, with.X1);
+    result.X2 = int.Min(result.X2, with.X2);
+    result.Y1 = int.Max(result.Y1, with.Y1);
+    result.Y2 = int.Min(result.Y2, with.Y2);
+    result.Z1 = int.Max(result.Z1, with.Z1);
+    result.Z2 = int.Min(result.Z2, with.Z2);
+    return result;
+  }
+
+  /// <summary>
   /// Determines if this AABB list intersects with another one.
   /// </summary>
   /// <param name="with"></param>

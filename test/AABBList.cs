@@ -240,4 +240,60 @@ public class AABBList {
     Assert.IsFalse(cube1.Contains(cube2, new Vec3i(0, 0, 0)));
     Assert.IsTrue(cube1.Contains(cube2, offset));
   }
+
+  [TestMethod]
+  public void GetBoundingBoxForIntersectionEmpty() {
+    Real.AABBList empty = new([]);
+    Cuboidi bouding = empty.GetBoundingBoxForIntersection(
+        new Cuboidi(-100, -100, -100, 100, 100, 100));
+    Assert.IsGreaterThan(bouding.X2, bouding.X1);
+    Assert.IsGreaterThan(bouding.Y2, bouding.Y1);
+    Assert.IsGreaterThan(bouding.Z2, bouding.Z1);
+  }
+
+  [TestMethod]
+  public void GetBoundingBoxForIntersectionEmptyInRange() {
+    Real.AABBList cube =
+        new(MakeCube(new BlockPos(1, 1, 1), new BlockPos(3, 4, 5)));
+    Cuboidi bouding = cube.GetBoundingBoxForIntersection(
+        new Cuboidi(-100, 100, -100, 100, 200, 100));
+    Assert.IsGreaterThan(bouding.X2, bouding.X1);
+    Assert.IsGreaterThan(bouding.Y2, bouding.Y1);
+    Assert.IsGreaterThan(bouding.Z2, bouding.Z1);
+
+    bouding = cube.GetBoundingBoxForIntersection(
+        new Cuboidi(-100, -100, -100, 100, -200, 100));
+    Assert.IsGreaterThan(bouding.X2, bouding.X1);
+    Assert.IsGreaterThan(bouding.Y2, bouding.Y1);
+    Assert.IsGreaterThan(bouding.Z2, bouding.Z1);
+  }
+
+  [TestMethod]
+  public void GetBoundingBoxForIntersectionStaggeredCubes() {
+    List<BlockPos> positions =
+        MakeCube(new BlockPos(100, 0, 200), new BlockPos(101, 10, 201));
+    positions.AddRange(
+        MakeCube(new BlockPos(104, 10, 204), new BlockPos(105, 20, 205)));
+    positions.AddRange(
+        MakeCube(new BlockPos(114, 20, 214), new BlockPos(115, 30, 215)));
+    Real.AABBList cube = new(positions);
+
+    Cuboidi bouding = cube.GetBoundingBoxForIntersection(
+        new Cuboidi(-100, 5, -100, 500, 15, 500));
+    Assert.AreEqual(100, bouding.X1);
+    Assert.AreEqual(5, bouding.Y1);
+    Assert.AreEqual(200, bouding.Z1);
+    Assert.AreEqual(105, bouding.X2);
+    Assert.AreEqual(15, bouding.Y2);
+    Assert.AreEqual(205, bouding.Z2);
+
+    bouding = cube.GetBoundingBoxForIntersection(
+        new Cuboidi(-100, -100, -100, 101, 200, 201));
+    Assert.AreEqual(100, bouding.X1);
+    Assert.AreEqual(0, bouding.Y1);
+    Assert.AreEqual(200, bouding.Z1);
+    Assert.AreEqual(101, bouding.X2);
+    Assert.AreEqual(10, bouding.Y2);
+    Assert.AreEqual(201, bouding.Z2);
+  }
 }
