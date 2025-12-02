@@ -216,7 +216,7 @@ public class OffsetBlockSchematic : BlockSchematic {
   /// the preferred height if the probes pass, -1 if the probe were incomplete
   /// due to unloaded chunks, or -2 if the probes failed
   /// </returns>
-  public int ProbeTerrain(ITerrainHeightReader reader, IBlockAccessor accessor,
+  public int ProbeTerrain(TerrainSurvey terrain, IBlockAccessor accessor,
                           Vec2i startPos) {
     // This is the acceptable y range so far.
     int yMin = int.MinValue;
@@ -227,9 +227,8 @@ public class OffsetBlockSchematic : BlockSchematic {
     bool incomplete = false;
     int y;
     foreach (TerrainProbe probe in Probes) {
-      pos.X = probe.X + startPos.X;
-      pos.Y = probe.Z + startPos.Y;
-      y = reader.GetHeight(accessor, pos);
+      y = terrain.GetHeight(accessor, probe.X + startPos.X,
+                            probe.Z + startPos.Y);
       if (y == -1) {
         // Keep probing the rest of the locations. This will queue up any
         // remaining chunk load requests. Also, one of the other probes may

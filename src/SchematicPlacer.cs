@@ -18,7 +18,7 @@ public interface ISchematicPlacerSupervisor {
   /// <returns>true if the location was accepted, or false if it was rejected
   /// due to an intersection with another placer</returns>
   bool TryFinalizeLocation(SchematicPlacer placer, BlockPos offset);
-  public ITerrainHeightReader Terrain { get; }
+  public TerrainSurvey Terrain { get; }
   public IChunkLoader Loader { get; }
 
   public IWorldAccessor WorldForResolve { get; }

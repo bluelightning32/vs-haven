@@ -10,7 +10,7 @@ namespace Haven.Test;
 /// stored in RAM.
 /// </summary>
 public class MockSchematicPlacerSupervisor : ISchematicPlacerSupervisor {
-  public ITerrainHeightReader Terrain { get; set; }
+  public Real.TerrainSurvey Terrain { get; set; }
   public IChunkLoader Loader { get; set; }
   public IWorldAccessor WorldForResolve { get; set; }
 
@@ -23,7 +23,7 @@ public class MockSchematicPlacerSupervisor : ISchematicPlacerSupervisor {
   public MockSchematicPlacerSupervisor() {
     WorldForResolve = Framework.Server;
     Loader = FakeLoader;
-    Terrain = FakeTerrain;
+    Terrain = new(FakeTerrain);
   }
 
   public bool TryFinalizeLocation(Real.SchematicPlacer placer,
