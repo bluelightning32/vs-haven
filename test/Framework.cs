@@ -72,6 +72,7 @@ public class Framework {
   [TestMethod]
   public void LoadChunk() {
     ICoreServerAPI sapi = (ICoreServerAPI)Server.Api;
+    sapi.WorldManager.UnloadChunkColumn(0, 0);
     IServerChunk chunk = sapi.WorldManager.GetChunk(0, 0, 0);
     Assert.IsNull(chunk);
     bool loaded = false;

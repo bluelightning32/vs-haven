@@ -27,7 +27,7 @@ public class TerrainHeightReader {
                                     Framework.UnloadedMapChunkX,
                                     Framework.UnloadedMapChunkZ));
     CollectionAssert.AreEquivalent(
-        new Vec2i[] { new(Framework.UnloadedMapChunkX,
+        new Vec3i[] { new(Framework.UnloadedMapChunkX, 0,
                           Framework.UnloadedMapChunkZ) },
         loader.Requested.ToList());
   }

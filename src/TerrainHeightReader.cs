@@ -4,30 +4,6 @@ using Vintagestory.API.MathTools;
 
 namespace Haven;
 
-public interface IChunkLoader {
-  /// <summary>
-  /// Triggers the requested chunk column to be asynchronously loaded. The
-  /// accessor will call the generator's Process method after the chunk column
-  /// is loaded. The accessor will internally deduplicate multiple requests for
-  /// the same chunk column.
-  /// </summary>
-  /// <param name="pos">A block X Z position (not chunk index)</param>
-  void LoadChunkColumnByBlockXZ(int blockX, int blockZ) {
-    LoadChunkColumn(blockX / GlobalConstants.ChunkSize,
-                    blockZ / GlobalConstants.ChunkSize);
-  }
-
-  /// <summary>
-  /// Triggers the requested chunk column to be asynchronously loaded. The
-  /// accessor will call the generator's Process method after the chunk column
-  /// is loaded. The accessor will internally deduplicate multiple requests for
-  /// the same chunk column.
-  /// </summary>
-  /// <param name="chunkX"></param>
-  /// <param name="chunkZ"></param>
-  void LoadChunkColumn(int chunkX, int chunkZ);
-}
-
 public interface ITerrainHeightReader {
   /// <summary>
   /// Get the world height at a location

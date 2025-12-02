@@ -6,10 +6,10 @@ namespace Haven.Test;
 /// A chunk loader that simply remembers which chunks were requested.
 /// </summary>
 public class FakeChunkLoader : IChunkLoader {
-  public readonly HashSet<Vec2i> Requested = [];
+  public readonly HashSet<Vec3i> Requested = [];
   public FakeChunkLoader() {}
 
-  public void LoadChunkColumn(int chunkX, int chunkZ) {
-    Requested.Add(new Vec2i(chunkX, chunkZ));
+  public void LoadChunk(int chunkX, int chunkY, int chunkZ) {
+    Requested.Add(new Vec3i(chunkX, chunkY, chunkZ));
   }
 }
