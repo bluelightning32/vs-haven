@@ -200,17 +200,17 @@ public class OffsetBlockSchematic {
 
   [TestMethod]
   public void AutoConfigureProbesOnlySurface0YOffset() {
-    Real.OffsetBlockSchematic box = CreateGraniteTop(1, 1, 1, 0);
-    box.AutoConfigureProbes();
+    Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, 0);
+    top.AutoConfigureProbes();
     CollectionAssert.AreEquivalent(
         new TerrainProbe[] { new() { X = 1, Z = 1, YMin = -1, YMax = 2 } },
-        box.Probes);
+        top.Probes);
   }
 
   [TestMethod]
   public void AutoConfigureProbesOnlySurfaceNeg1YOffset() {
-    Real.OffsetBlockSchematic box = CreateGraniteTop(1, 1, 1, -1);
-    box.AutoConfigureProbes();
+    Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, -1);
+    top.AutoConfigureProbes();
     (int, int)[] expectedPositions = [
       new(0, 0),
       new(2, 0),
@@ -226,6 +226,97 @@ public class OffsetBlockSchematic {
         YMax = 1,
       });
     }
-    CollectionAssert.AreEquivalent(expected, box.Probes);
+    CollectionAssert.AreEquivalent(expected, top.Probes);
+  }
+
+  [TestMethod]
+  public void ProbeTerrainUnloadedChunk() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
+    box.AutoConfigureProbes();
+    MemoryTerrainHeightReader reader = new();
+
+    Assert.AreEqual(
+        -1, box.ProbeTerrain(
+                reader, null,
+                new(Framework.UnloadedMapChunkX * GlobalConstants.ChunkSize,
+                    Framework.UnloadedMapChunkZ * GlobalConstants.ChunkSize)));
+  }
+
+  [TestMethod]
+  public void ProbeTerrainAverageTwoHeights() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
+    box.Probes = [
+      new() {
+        X = 0,
+        Z = 0,
+        YMin = -100,
+        YMax = 100,
+      },
+      new() {
+        X = 1,
+        Z = 0,
+        YMin = -100,
+        YMax = 100,
+      }
+    ];
+
+    MemoryTerrainHeightReader reader = new();
+    reader.SetHeight(0, 0, 2);
+    reader.SetHeight(1, 0, 4);
+    // The terrain is easily within the probe's allowed range. So the preferred
+    // height should be an average of the surface height at both locations.
+    Assert.AreEqual(3, box.ProbeTerrain(reader, null, new(0, 0)));
+  }
+
+  [TestMethod]
+  public void ProbeTerrainRestrictiveProbeWins() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
+    box.Probes = [
+      new() {
+        X = 0,
+        Z = 0,
+        YMin = -100,
+        YMax = 100,
+      },
+      new() {
+        X = 1,
+        Z = 0,
+        YMin = 0,
+        YMax = 1,
+      }
+    ];
+
+    MemoryTerrainHeightReader reader = new();
+    // This probe easily passes.
+    reader.SetHeight(0, 0, 2);
+    // This probe has no margin of error. So it should dictate the final result.
+    reader.SetHeight(1, 0, 4);
+    Assert.AreEqual(4, box.ProbeTerrain(reader, null, new(0, 0)));
+  }
+
+  [TestMethod]
+  public void ProbeTerrainFailure() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
+    box.Probes = [
+      new() {
+        X = 0,
+        Z = 0,
+        YMin = 0,
+        YMax = 1,
+      },
+      new() {
+        X = 1,
+        Z = 1,
+        YMin = 0,
+        YMax = 1,
+      }
+    ];
+
+    MemoryTerrainHeightReader reader = new();
+    // This probe easily passes.
+    reader.SetHeight(0, 0, 2);
+    // This probe cannot pass along with the prior one.
+    reader.SetHeight(1, 1, 3);
+    Assert.AreEqual(-2, box.ProbeTerrain(reader, null, new(0, 0)));
   }
 }

@@ -201,4 +201,55 @@ public class OffsetBlockSchematic : BlockSchematic {
     startPos.Z = -withOffset.Z;
     return false;
   }
+
+  /// <summary>
+  /// Determines whether the terrain is sufficiently flat at the given location.
+  /// </summary>
+  /// <param name="startPos">
+  /// where to put the north-west corner of the schematic
+  /// </param>
+  /// <returns>
+  /// the preferred height if the probes pass, -1 if the probe were incomplete
+  /// due to unloaded chunks, or -2 if the probes failed
+  /// </returns>
+  public int ProbeTerrain(ITerrainHeightReader reader, IBlockAccessor accessor,
+                          Vec2i startPos) {
+    // This is the acceptable y range so far.
+    int yMin = int.MinValue;
+    int yMax = int.MaxValue;
+    // This is the sum of the y heights at each probe location.
+    int yTerrainSum = 0;
+    Vec2i pos = new();
+    bool incomplete = false;
+    int y;
+    foreach (TerrainProbe probe in Probes) {
+      pos.X = probe.X + startPos.X;
+      pos.Y = probe.Z + startPos.Y;
+      y = reader.GetHeight(accessor, pos);
+      if (y == -1) {
+        // Keep probing the rest of the locations. This will queue up any
+        // remaining chunk load requests. Also, one of the other probes may
+        // fail.
+        incomplete = true;
+        continue;
+      }
+      yTerrainSum += y;
+      yMin = int.Max(yMin, probe.YMin + y);
+      yMax = int.Min(yMax, probe.YMax + y);
+      if (yMin >= yMax) {
+        // The probe failed.
+        return -2;
+      }
+    }
+    if (incomplete) {
+      return -1;
+    }
+    // If the range allows it, place the structure at the average terrain
+    // height.
+    y = yTerrainSum / Probes.Length;
+    // Adjust the position so that it is within the allowed range.
+    y = int.Max(y, yMin);
+    y = int.Min(y, yMax);
+    return y;
+  }
 }
