@@ -1,12 +1,16 @@
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
+
+using ProtoBuf;
 
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
 namespace Haven;
 
+[ProtoContract(Surrogate = typeof(OffsetBlockSchematicSurrogate))]
 public class OffsetBlockSchematic : BlockSchematic {
   [JsonProperty]
   public int OffsetY = 0;
@@ -251,5 +255,54 @@ public class OffsetBlockSchematic : BlockSchematic {
     y = int.Max(y, yMin);
     y = int.Min(y, yMax);
     return y;
+  }
+
+  public override int Place(IBlockAccessor blockAccessor,
+                            IWorldAccessor worldForCollectibleResolve,
+                            BlockPos startPos, bool replaceMetaBlocks = true) {
+    BlockPos pos = startPos.Copy();
+    pos.Y += OffsetY;
+    return base.Place(blockAccessor, worldForCollectibleResolve, pos,
+                      replaceMetaBlocks);
+  }
+
+  public Cuboidi GetBoundingBox(BlockPos startPos) {
+    return new Cuboidi(startPos.X, startPos.Y + OffsetY, startPos.Z,
+                       startPos.X + SizeX, startPos.Y + OffsetY + SizeY,
+                       startPos.Z + SizeZ);
+  }
+
+  public void PlaceEntitiesAndBlockEntities(IBlockAccessor accessor,
+                                            IWorldAccessor worldForResolve,
+                                            BlockPos startPos,
+                                            bool replaceMetaBlocks = true) {
+    BlockPos pos = startPos.Copy();
+    pos.Y += OffsetY;
+    PlaceEntitiesAndBlockEntities(accessor, worldForResolve, pos, BlockCodes,
+                                  ItemCodes, replaceBlockEntities: false, null,
+                                  0, null, replaceMetaBlocks);
+  }
+}
+
+[ProtoContract]
+internal class OffsetBlockSchematicSurrogate {
+  [ProtoMember(1)]
+  public string Json = null;
+
+  public static implicit
+  operator OffsetBlockSchematic(OffsetBlockSchematicSurrogate surrogate) {
+    if (surrogate == null) {
+      return null;
+    }
+    return JsonUtil.FromString<OffsetBlockSchematic>(surrogate.Json);
+  }
+
+  public static implicit
+  operator OffsetBlockSchematicSurrogate(OffsetBlockSchematic source) {
+    if (source == null) {
+      return null;
+    }
+    return new OffsetBlockSchematicSurrogate { Json =
+                                                   JsonUtil.ToString(source) };
   }
 }

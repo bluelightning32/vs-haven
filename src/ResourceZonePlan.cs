@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using Vintagestory.API.MathTools;
 
@@ -9,9 +10,8 @@ namespace Haven;
 public class ResourceZonePlan {
   public BlockPos Center { get; private set; }
   public double Radius { get; private set; }
-  private readonly Dictionary<BlockPos, OffsetBlockSchematic> _structures =
-      new();
-  public IReadOnlyDictionary<BlockPos, OffsetBlockSchematic> Structures {
+  private readonly List<SchematicPlacer> _structures = [];
+  public IReadOnlyList<SchematicPlacer> Structures {
     get { return _structures; }
   }
 
@@ -20,11 +20,13 @@ public class ResourceZonePlan {
   /// in the XZ plane. The Y coordinates of the structures are not set, because
   /// the terrain height is not available at this stage.
   /// </summary>
+  /// <param name="supervisor"></param>
   /// <param name="center"></param>
   /// <param name="minRadius"></param>
   /// <param name="rand"></param>
   /// <param name="structures"></param>
-  public ResourceZonePlan(BlockPos center, double minRadius, IRandom rand,
+  public ResourceZonePlan(ISchematicPlacerSupervisor supervisor,
+                          BlockPos center, double minRadius, IRandom rand,
                           IEnumerable<OffsetBlockSchematic> structures) {
     Center = center;
     Radius = minRadius;
@@ -45,8 +47,8 @@ public class ResourceZonePlan {
       }
       Vec2d location = GetRandomRectCenterInCircle(rand, structure.SizeX,
                                                    structure.SizeZ, Radius);
-      Debug.Assert(!Double.IsNaN(location.X));
-      Debug.Assert(!Double.IsNaN(location.Y));
+      Debug.Assert(!double.IsNaN(location.X));
+      Debug.Assert(!double.IsNaN(location.Y));
       placement.Add(new(location, structure));
     }
     // Sort the structures by their distance from the center of the zone. This
@@ -97,12 +99,16 @@ public class ResourceZonePlan {
       } while (!avoidedIntersection);
       // This structure is now considered placed. So convert its location into a
       // relative lower bound offset.
-      placement[i].Key.X = iPos.X - Center.X;
-      placement[i].Key.Y = iPos.Z - Center.Z;
-      // Also add the structure to the official dictionary. This for loop
-      // continues to iterate through placement instead of _structures, because
-      // placement is sorted.
-      _structures[iPos] = placement[i].Value;
+      int x = iPos.X - Center.X;
+      placement[i].Key.X = x;
+      int z = iPos.Z - Center.Z;
+      placement[i].Key.Y = z;
+      // Also add the structure to the official dictionary. The for loop
+      // above continues to iterate through placement instead of _structures,
+      // because placement is sorted.
+      _structures.Append(new SchematicPlacer(
+          placement[i].Value, new(x, center.Y, z, center.dimension),
+          supervisor));
       ExpandRadiusIfNecessary(iPos, placement[i].Value);
     }
   }
@@ -110,8 +116,9 @@ public class ResourceZonePlan {
   /// <summary>
   /// Expands the zone radius to include a structure
   /// </summary>
-  /// <param name="startPos">the start position (lower bound) for the
-  /// structure</param> <param name="structure"></param>
+  /// <param name="startPos">
+  /// the start position (lower bound) for the structure</param>
+  /// <param name="structure"></param>
   private void ExpandRadiusIfNecessary(BlockPos startPos,
                                        OffsetBlockSchematic structure) {
     double radiusSq = Radius * Radius;

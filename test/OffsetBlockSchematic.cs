@@ -3,6 +3,7 @@ using PrefixClassName.MsTest;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Util;
 
 using Real = Haven;
 
@@ -318,5 +319,17 @@ public class OffsetBlockSchematic {
     // This probe cannot pass along with the prior one.
     reader.SetHeight(1, 1, 3);
     Assert.AreEqual(-2, box.ProbeTerrain(reader, null, new(0, 0)));
+  }
+
+  [TestMethod]
+  public void ProtoSerialization() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, -1);
+    byte[] data = SerializerUtil.Serialize(box);
+    Real.OffsetBlockSchematic copy =
+        SerializerUtil.Deserialize<Real.OffsetBlockSchematic>(data);
+    Assert.AreEqual(box.OffsetY, copy.OffsetY);
+    CollectionAssert.AreEquivalent(
+        box.GetJustPositions(new BlockPos(0, 0, 0)),
+        copy.GetJustPositions(new BlockPos(0, 0, 0)));
   }
 }

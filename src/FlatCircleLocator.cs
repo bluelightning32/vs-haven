@@ -25,6 +25,17 @@ interface IWorldGenerator {
   /// again
   /// </returns>
   public bool Generate(IBlockAccessor accessor);
+
+  /// <summary>
+  /// If a IBlockAccessorRevertable was used, then call this after the blocks
+  /// are committed.
+  /// </summary>
+  /// <param name="accessor"></param>
+  /// <returns>
+  /// true if all the block entites were committed, or false if Commit should be
+  /// called again.
+  /// </returns>
+  public bool Commit(IBlockAccessor accessor);
 }
 
 /// <summary>
@@ -151,6 +162,8 @@ public class FlatCircleLocator : IWorldGenerator {
     }
     return true;
   }
+
+  public bool Commit(IBlockAccessor accessor) { return true; }
 
   public bool Failed {
     get { return _searchOffset.Index >= MaxAttempts; }

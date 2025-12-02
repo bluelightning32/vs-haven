@@ -180,26 +180,24 @@ public class ResourceZonePlan {
     double minRadius = 1;
     BlockPos center = new(10000, 100, 10000);
     // Purposely use minRadius=1 to force a bunch of overlaps.
-    Real.ResourceZonePlan plan = new(center, minRadius, rand, schematics);
+    Real.ResourceZonePlan plan = new(null, center, minRadius, rand, schematics);
     Assert.AreEqual(center, plan.Center);
     Assert.IsGreaterThan(2, plan.Radius);
     Assert.IsLessThan(100, plan.Radius);
 
     // Verify all of the structures fit within the final zone radius.
     Real.AABBList zone = AABBList.MakeCylinder(center, plan.Radius, 1000);
-    foreach (KeyValuePair<BlockPos, Real.OffsetBlockSchematic> structure in plan
-                 .Structures) {
+    foreach (Real.SchematicPlacer structure in plan.Structures) {
       Assert.IsTrue(
-          zone.Contains(structure.Value.Outline, structure.Key.AsVec3i));
+          zone.Contains(structure.Schematic.Outline, structure.Offset.AsVec3i));
     }
 
     // Verify that none of the structures intersect with each other.
-    var placedStructures = plan.Structures.ToList();
-    for (int i = 0; i < placedStructures.Count; ++i) {
+    for (int i = 0; i < plan.Structures.Count; ++i) {
       for (int j = 0; j < i; ++j) {
-        Assert.IsNull(placedStructures[i].Value.Intersects(
-            placedStructures[i].Key, placedStructures[j].Value,
-            placedStructures[j].Key));
+        Assert.IsNull(plan.Structures[i].Schematic.Intersects(
+            plan.Structures[i].Offset, plan.Structures[j].Schematic,
+            plan.Structures[j].Offset));
       }
     }
   }
