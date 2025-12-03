@@ -50,23 +50,37 @@ public class TerrainSurvey {
     return GetColumn(accessor, new Vec2i(chunkX, chunkZ));
   }
 
+  internal ChunkColumnSurvey
+  GetColumnWithoutRoughnessUpdate(IBlockAccessor accessor, Vec2i pos) {
+    if (_chunks.TryGetValue(pos, out ChunkColumnSurvey result)) {
+      return result;
+    } else {
+      result =
+          ChunkColumnSurvey.Create(accessor, _reader, pos.X, pos.Y, null, null);
+      if (result != null) {
+        _chunks.Add(pos, result);
+      }
+      return result;
+    }
+  }
+
   public ChunkColumnSurvey GetColumn(IBlockAccessor accessor, Vec2i pos) {
     if (_chunks.TryGetValue(pos, out ChunkColumnSurvey result)) {
       if (result.Stats.Roughness == -1) {
         // The neighbors were not available when this chunk was first loaded.
         // Try again now.
-        _chunks.TryGetValue(new Vec2i(pos.X - 1, pos.Y),
-                            out ChunkColumnSurvey west);
-        _chunks.TryGetValue(new Vec2i(pos.X, pos.Y - 1),
-                            out ChunkColumnSurvey north);
+        ChunkColumnSurvey west = GetColumnWithoutRoughnessUpdate(
+            accessor, new Vec2i(pos.X - 1, pos.Y));
+        ChunkColumnSurvey north = GetColumnWithoutRoughnessUpdate(
+            accessor, new Vec2i(pos.X, pos.Y - 1));
         result.CalculateRoughness(west, north);
       }
       return result;
     } else {
-      _chunks.TryGetValue(new Vec2i(pos.X - 1, pos.Y),
-                          out ChunkColumnSurvey west);
-      _chunks.TryGetValue(new Vec2i(pos.X, pos.Y - 1),
-                          out ChunkColumnSurvey north);
+      ChunkColumnSurvey west = GetColumnWithoutRoughnessUpdate(
+          accessor, new Vec2i(pos.X - 1, pos.Y));
+      ChunkColumnSurvey north = GetColumnWithoutRoughnessUpdate(
+          accessor, new Vec2i(pos.X, pos.Y - 1));
       result = ChunkColumnSurvey.Create(accessor, _reader, pos.X, pos.Y, west,
                                         north);
       if (result != null) {

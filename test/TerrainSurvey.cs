@@ -27,6 +27,36 @@ public class TerrainSurvey {
   }
 
   [TestMethod]
+  public void GetColumnNeighborsLoadedLater() {
+    MemoryTerrainHeightReader reader = new();
+    const int surroundingHeight = 50;
+
+    // Fill the requested chunk
+    const int centerHeight = 200;
+    reader.FillChunk(1, 1, centerHeight, 0, 0);
+
+    Real.TerrainSurvey survey = new(reader);
+    TerrainStats stats = survey.GetColumn(null, new Vec2i(1, 1)).Stats;
+    Assert.AreEqual(-1, stats.Roughness);
+
+    // Fill nearby chunks
+    for (int x = 0; x < 3; ++x) {
+      for (int z = 0; z < 3; ++z) {
+        if (x != 1 || z != 1) {
+          reader.FillChunk(x, z, surroundingHeight, 0, 0);
+        }
+      }
+    }
+
+    stats = survey.GetColumn(null, new Vec2i(1, 1)).Stats;
+    // The border between the requested chunk and the neighboring chunks is
+    // rough. Only the north and west borders are counted.
+    Assert.AreEqual((centerHeight - surroundingHeight) *
+                        GlobalConstants.ChunkSize * 2,
+                    stats.Roughness);
+  }
+
+  [TestMethod]
   public void GetRoughCircleStatsSingleChunk() {
     MemoryTerrainHeightReader reader = new();
     const int surroundingHeight = 50;
