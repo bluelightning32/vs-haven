@@ -251,7 +251,7 @@ public class OffsetBlockSchematic : BlockSchematic {
     y = yTerrainSum / Probes.Length;
     // Adjust the position so that it is within the allowed range.
     y = int.Max(y, yMin);
-    y = int.Min(y, yMax);
+    y = int.Min(y, yMax - 1);
     return y;
   }
 

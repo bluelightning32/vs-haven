@@ -272,7 +272,7 @@ public class OffsetBlockSchematic {
   }
 
   [TestMethod]
-  public void ProbeTerrainRestrictiveProbeWins() {
+  public void ProbeTerrainRestrictiveProbeWinsHigh() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
     box.Probes = [
       new() {
@@ -296,6 +296,33 @@ public class OffsetBlockSchematic {
     // This probe has no margin of error. So it should dictate the final result.
     reader.SetHeight(1, 0, 4);
     Assert.AreEqual(4, box.ProbeTerrain(survey, null, new(0, 0)));
+  }
+
+  [TestMethod]
+  public void ProbeTerrainRestrictiveProbeWinsLow() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
+    box.Probes = [
+      new() {
+        X = 0,
+        Z = 0,
+        YMin = -100,
+        YMax = 100,
+      },
+      new() {
+        X = 1,
+        Z = 0,
+        YMin = 0,
+        YMax = 1,
+      }
+    ];
+
+    MemoryTerrainHeightReader reader = new();
+    Real.TerrainSurvey survey = new(reader);
+    // This probe easily passes.
+    reader.SetHeight(0, 0, 4);
+    // This probe has no margin of error. So it should dictate the final result.
+    reader.SetHeight(1, 0, 2);
+    Assert.AreEqual(2, box.ProbeTerrain(survey, null, new(0, 0)));
   }
 
   [TestMethod]
