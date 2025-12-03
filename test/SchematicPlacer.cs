@@ -1,6 +1,7 @@
 using PrefixClassName.MsTest;
 
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 
@@ -65,6 +66,34 @@ public class SchematicPlacer {
     Assert.IsTrue(placer.Commit(accessor));
     CollectionAssert.AreEquivalent(Array.Empty<BlockPos>(),
                                    accessor.StagedBlocks.Keys);
+  }
+
+  [TestMethod]
+  public void KeepsGoodStructurePosition() {
+    MockSchematicPlacerSupervisor supervisor = new();
+    bool locationSelected = false;
+    Real.SchematicPlacer placer = null;
+    BlockPos pos = new(3 * GlobalConstants.ChunkSize, 0, 3 * GlobalConstants.ChunkSize);
+    bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
+      Assert.IsFalse(locationSelected);
+      locationSelected = true;
+      Assert.AreEqual(pos, pos2);
+      Assert.AreEqual(placer, placer2);
+      return true;
+    }
+    supervisor.TryFinalizeLocationMock = FinalizeLocation;
+    placer =
+        CreateGraniteBox(1, 1, 1, 0, pos, supervisor);
+
+    // Mark the chunk as loaded.
+    Framework.Api.WorldManager.LoadChunkColumnPriority(3, 3);
+    Framework.Server.LoadChunksInline();
+    supervisor.FakeTerrain.FillChunk(3, 3, 0, 0, 0);
+    IBulkBlockAccessor accessor =
+        Framework.Server.GetBlockAccessorBulkUpdate(false, false);
+
+    Assert.IsTrue(placer.Generate(accessor));
+    Assert.IsTrue(locationSelected);
   }
 
   [TestMethod]
