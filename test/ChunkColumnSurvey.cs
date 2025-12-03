@@ -171,6 +171,18 @@ public class ChunkColumnSurvey {
   }
 
   [TestMethod]
+  public void SumHeight() {
+    MemoryTerrainHeightReader reader = new();
+    // Fill requested chunk
+    reader.FillChunk(1, 1, 200, 0, 0);
+    Real.ChunkColumnSurvey survey =
+        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
+
+    Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize * 200,
+                    survey.Stats.SumHeight);
+  }
+
+  [TestMethod]
   public void Serialization() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
@@ -187,6 +199,7 @@ public class ChunkColumnSurvey {
 
     Assert.AreEqual(survey.Stats.Roughness, copy.Stats.Roughness);
     Assert.AreEqual(survey.Stats.SolidCount, copy.Stats.SolidCount);
+    Assert.AreEqual(survey.Stats.SumHeight, copy.Stats.SumHeight);
     Assert.AreEqual(survey.GetHeight(3, 5), copy.GetHeight(3, 5));
   }
 }

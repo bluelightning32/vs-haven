@@ -21,6 +21,11 @@ public struct TerrainStats {
   /// </summary>
   [ProtoMember(2)]
   public int SolidCount = 0;
+  /// <summary>
+  /// The sum of the y coordinate of the surface blocks in the area.
+  /// </summary>
+  [ProtoMember(3)]
+  public int SumHeight = 0;
 
   public TerrainStats() {}
 
@@ -29,6 +34,7 @@ public struct TerrainStats {
       Roughness += stats.Roughness;
     }
     SolidCount += stats.SolidCount;
+    SumHeight += stats.SumHeight;
   }
 }
 
@@ -55,12 +61,15 @@ public class ChunkColumnSurvey {
     const int chunkBlocks =
         GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
     int solidCount = 0;
+    int sumHeight = 0;
     for (int offset = 0; offset < chunkBlocks; ++offset) {
       if (solid[offset]) {
         ++solidCount;
       }
+      sumHeight += heights[offset];
     }
     _stats.SolidCount = solidCount;
+    _stats.SumHeight = sumHeight;
     CalculateRoughness(westHeights, northHeights);
   }
 
