@@ -35,6 +35,12 @@ public class ResourceZonePlan {
     get { return _structures; }
   }
 
+  public ResourceZonePlan(ISchematicPlacerSupervisor supervisor,
+                          ResourceZoneConfig config, BlockPos center,
+                          IRandom rand)
+      : this(supervisor, center, config.MinRadius, rand,
+             config.SelectStructures(rand)) {}
+
   /// <summary>
   /// Construct a resource zone plan. The initial plan lays out the structures
   /// in the XZ plane. The Y coordinates of the structures are not set, because
@@ -97,15 +103,15 @@ public class ResourceZonePlan {
         moveDir.Y = 1;
       }
       moveDir.Normalize();
-      Debug.Assert(!Double.IsNaN(moveDir.X));
-      Debug.Assert(!Double.IsNaN(moveDir.Z));
+      Debug.Assert(!double.IsNaN(moveDir.X));
+      Debug.Assert(!double.IsNaN(moveDir.Z));
       bool avoidedIntersection = true;
       // Keep iterating through all the previously placed structures until the
       // structure at i does not overlap with any of them.
       do {
         avoidedIntersection = true;
         for (int j = 0; j < i; ++j) {
-          BlockPos jPos = new((int)placement[j].Key.X + Center.X, 0,
+          BlockPos jPos = new((int)placement[j].Key.X + Center.X, Center.Y,
                               (int)placement[j].Key.Y + Center.Z);
           // Even if avoidedIntersection becomes false, continue through the
           // rest of the placed structures, because the i structure is more
@@ -119,16 +125,13 @@ public class ResourceZonePlan {
       } while (!avoidedIntersection);
       // This structure is now considered placed. So convert its location into a
       // relative lower bound offset.
-      int x = iPos.X - Center.X;
-      placement[i].Key.X = x;
-      int z = iPos.Z - Center.Z;
-      placement[i].Key.Y = z;
+      placement[i].Key.X = iPos.X - Center.X;
+      placement[i].Key.Y = iPos.Z - Center.Z;
       // Also add the structure to the official dictionary. The for loop
       // above continues to iterate through placement instead of _structures,
       // because placement is sorted.
-      _structures.Append(new SchematicPlacer(
-          placement[i].Value, new(x, center.Y, z, center.dimension),
-          supervisor));
+      _structures.Add(
+          new SchematicPlacer(placement[i].Value, iPos, supervisor));
       ExpandRadiusIfNecessary(iPos, placement[i].Value);
     }
   }
@@ -158,16 +161,17 @@ public class ResourceZonePlan {
   }
 
   /// <summary>
-  /// Converts a structure center position relative to the zone center into a
-  /// structure start position relative to the zone center.
+  /// Converts a structure center position relative to the zone center into an
+  /// absolute structure start position.
   /// </summary>
   /// <param name="center"></param>
   /// <param name="structure"></param>
   /// <returns></returns>
   private BlockPos StructureCenterToStart(Vec2d center,
                                           OffsetBlockSchematic structure) {
-    return new((int)(center.X - structure.SizeX / 2.0) + Center.X, 0,
-               (int)(center.Y - structure.SizeZ / 2.0) + Center.Z);
+    return new((int)(center.X - structure.SizeX / 2.0) + Center.X, Center.Y,
+               (int)(center.Y - structure.SizeZ / 2.0) + Center.Z,
+               Center.dimension);
   }
 
   private int CompareDistance(KeyValuePair<Vec2d, OffsetBlockSchematic> a,

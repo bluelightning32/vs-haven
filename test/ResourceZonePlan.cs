@@ -166,6 +166,17 @@ public class ResourceZonePlan {
   }
 
   [TestMethod]
+  public void HasStructures() {
+    ResourceZoneConfig config = new();
+    config.Resolve(Framework.Api.Logger, Framework.Server.AssetManager);
+    BlockPos center = new(10000, 100, 10000);
+    NormalRandom rand = new(0);
+    Real.ResourceZonePlan plan = new(null, config, center, rand);
+    Assert.AreEqual(center, plan.Center);
+    Assert.IsGreaterThan(0, plan.Structures.Count);
+  }
+
+  [TestMethod]
   public void ExpandRadiusIfNecessary() {
     List<Real.Structure> structures =
         [Structure.Load("stone"), Structure.Load("cattailtops")];
@@ -189,15 +200,26 @@ public class ResourceZonePlan {
     Real.AABBList zone = AABBList.MakeCylinder(center, plan.Radius, 1000);
     foreach (Real.SchematicPlacer structure in plan.Structures) {
       Assert.IsTrue(
-          zone.Contains(structure.Schematic.Outline, structure.Offset.AsVec3i));
+          zone.Contains(structure.Schematic.Outline, structure.Offset.AsVec3i),
+          $"Structure of size ({structure.Schematic.SizeX}, {structure.Schematic.SizeY}, {structure.Schematic.SizeZ}) at offset ({structure.Offset}) does not fit in zone of radius {plan.Radius} at ({center})");
     }
 
     // Verify that none of the structures intersect with each other.
     for (int i = 0; i < plan.Structures.Count; ++i) {
       for (int j = 0; j < i; ++j) {
-        Assert.IsNull(plan.Structures[i].Schematic.Intersects(
-            plan.Structures[i].Offset, plan.Structures[j].Schematic,
-            plan.Structures[j].Offset));
+        Assert.IsNull(
+            plan.Structures[i].Schematic.Intersects(
+                plan.Structures[i].Offset, plan.Structures[j].Schematic,
+                plan.Structures[j].Offset),
+            $"The structure at index {i} of size " +
+                $"({plan.Structures[i].Schematic.SizeX}, " +
+                $"{plan.Structures[i].Schematic.SizeY}, " +
+                $"{plan.Structures[i].Schematic.SizeZ}) at offset " +
+                $"({plan.Structures[i].Offset}) intersects with structure at " +
+                $"index {j} of size ({plan.Structures[j].Schematic.SizeX}, " +
+                $"{plan.Structures[j].Schematic.SizeY}, " +
+                $"{plan.Structures[j].Schematic.SizeZ}) at offset " +
+                $"({plan.Structures[j].Offset})");
       }
     }
   }

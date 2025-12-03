@@ -121,6 +121,10 @@ public class FlatCircleLocator : IWorldGenerator {
     get { return _start + _searchOffset.SquareOffset * (_radius / 4); }
   }
 
+  public bool Done {
+    get { return _done; }
+  }
+
   public bool Generate(IBlockAccessor accessor) {
     if (_done) {
       return true;
