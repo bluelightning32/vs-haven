@@ -17,10 +17,10 @@ public struct TerrainStats {
   [ProtoMember(1)]
   public int Roughness = 0;
   /// <summary>
-  /// The number of surface blocks at or above sea level in the area
+  /// The number of surface blocks not filled with water
   /// </summary>
   [ProtoMember(2)]
-  public int AboveSea = 0;
+  public int SolidCount = 0;
 
   public TerrainStats() {}
 
@@ -28,7 +28,7 @@ public struct TerrainStats {
     if ((Roughness | stats.Roughness) != -1) {
       Roughness += stats.Roughness;
     }
-    AboveSea += stats.AboveSea;
+    SolidCount += stats.SolidCount;
   }
 }
 
@@ -45,17 +45,22 @@ public class ChunkColumnSurvey {
   /// </summary>
   [ProtoMember(2)]
   public readonly ushort[] Heights;
+  [ProtoMember(3)]
+  public readonly bool[] Solid;
 
-  private ChunkColumnSurvey(ushort[] heights, ushort[] westHeights,
-                            ushort[] northHeights) {
+  private ChunkColumnSurvey(ushort[] heights, bool[] solid,
+                            ushort[] westHeights, ushort[] northHeights) {
     Heights = heights;
+    Solid = solid;
     const int chunkBlocks =
         GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
+    int solidCount = 0;
     for (int offset = 0; offset < chunkBlocks; ++offset) {
-      if (heights[offset] >= Climate.Sealevel) {
-        ++_stats.AboveSea;
+      if (solid[offset]) {
+        ++solidCount;
       }
     }
+    _stats.SolidCount = solidCount;
     CalculateRoughness(westHeights, northHeights);
   }
 
@@ -140,7 +145,8 @@ public class ChunkColumnSurvey {
     } else {
       northHeights = reader.GetHeights(accessor, chunkX, chunkZ - 1);
     }
-    ushort[] heights = reader.GetHeights(accessor, chunkX, chunkZ);
+    (ushort[] heights, bool[] solid) =
+        reader.GetHeightsAndSolid(accessor, chunkX, chunkZ);
 
     // All of the chunk heights are requested above, even if some of the heights
     // are null. This is because GetHeights can trigger loading the chunks, and
@@ -148,7 +154,7 @@ public class ChunkColumnSurvey {
     if (heights == null) {
       return null;
     }
-    return new ChunkColumnSurvey(heights, westHeights, northHeights);
+    return new ChunkColumnSurvey(heights, solid, westHeights, northHeights);
   }
 
   /// <summary>

@@ -14,16 +14,16 @@ public class ChunkColumnSurvey {
   public void NorthNeighborMissing() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel, 0, 0);
+    reader.FillChunk(1, 1, 100, 0, 0);
     // Fill west chunk
-    reader.FillChunk(0, 1, Climate.Sealevel, 0, 0);
+    reader.FillChunk(0, 1, 100, 0, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.IsNotNull(survey);
     Assert.AreEqual(-1, survey.Stats.Roughness);
     Assert.IsTrue(reader.WasChunkRequested(1, 0));
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.Stats.AboveSea);
+                    survey.Stats.SolidCount);
 
     Real.ChunkColumnSurvey west =
         Real.ChunkColumnSurvey.Create(null, reader, 0, 1, null, null);
@@ -31,7 +31,7 @@ public class ChunkColumnSurvey {
     Assert.AreEqual(-1, survey.Stats.Roughness);
 
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel, 0, 0);
+    reader.FillChunk(1, 0, 100, 0, 0);
     Real.ChunkColumnSurvey north =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 0, null, null);
     survey.CalculateRoughness(west, north);
@@ -42,16 +42,16 @@ public class ChunkColumnSurvey {
   public void WestNeighborMissing() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel, 1, 1);
+    reader.FillChunk(1, 1, 100, 1, 1);
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel, 1, 1);
+    reader.FillChunk(1, 0, 100, 1, 1);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.IsNotNull(survey);
     Assert.AreEqual(-1, survey.Stats.Roughness);
     Assert.IsTrue(reader.WasChunkRequested(0, 1));
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.Stats.AboveSea);
+                    survey.Stats.SolidCount);
   }
 
   [TestMethod]
@@ -80,66 +80,78 @@ public class ChunkColumnSurvey {
   public void AllFlat() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel, 0, 0);
+    reader.FillChunk(1, 1, 100, 0, 0);
     // Fill west chunk
-    reader.FillChunk(0, 1, Climate.Sealevel, 0, 0);
+    reader.FillChunk(0, 1, 100, 0, 0);
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel, 0, 0);
+    reader.FillChunk(1, 0, 100, 0, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(0, survey.Stats.Roughness);
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    survey.Stats.AboveSea);
+                    survey.Stats.SolidCount);
   }
 
   [TestMethod]
   public void XSlope1() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel - 1, 1, 0);
+    reader.FillChunk(1, 1, 100 - 1, 1, 0);
     // Fill west chunk
-    reader.FillChunk(0, 1, Climate.Sealevel - 2, 0, 0);
+    reader.FillChunk(0, 1, 100 - 2, 0, 0);
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel - 1, 1, 0);
+    reader.FillChunk(1, 0, 100 - 1, 1, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
                     survey.Stats.Roughness);
-    Assert.AreEqual((GlobalConstants.ChunkSize - 1) * GlobalConstants.ChunkSize,
-                    survey.Stats.AboveSea);
   }
 
   [TestMethod]
   public void XSlopeNeg2() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel - 1, -2, 0);
+    reader.FillChunk(1, 1, 100 - 1, -2, 0);
     // Fill west chunk
-    reader.FillChunk(0, 1, Climate.Sealevel + 1, 0, 0);
+    reader.FillChunk(0, 1, 100 + 1, 0, 0);
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel - 1, -2, 0);
+    reader.FillChunk(1, 0, 100 - 1, -2, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(2 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
                     survey.Stats.Roughness);
-    Assert.AreEqual(0, survey.Stats.AboveSea);
   }
 
   [TestMethod]
   public void ZSlope2() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel - 2, 0, 2);
+    reader.FillChunk(1, 1, 100 - 2, 0, 2);
     // Fill west chunk
-    reader.FillChunk(0, 1, Climate.Sealevel - 2, 0, 2);
+    reader.FillChunk(0, 1, 100 - 2, 0, 2);
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel - 4, 0, 0);
+    reader.FillChunk(1, 0, 100 - 4, 0, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     Assert.AreEqual(2 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
                     survey.Stats.Roughness);
-    Assert.AreEqual((GlobalConstants.ChunkSize - 1) * GlobalConstants.ChunkSize,
-                    survey.Stats.AboveSea);
+  }
+
+  [TestMethod]
+  public void OneUnsolidBlock() {
+    MemoryTerrainHeightReader reader = new();
+    // Fill requested chunk
+    reader.FillChunk(1, 1, 100, 0, 2);
+    // Fill west chunk
+    reader.FillChunk(0, 1, 100, 0, 2);
+    // Fill north chunk
+    reader.FillChunk(1, 0, 100, 0, 0);
+    reader.SetSolid(GlobalConstants.ChunkSize, GlobalConstants.ChunkSize,
+                    false);
+    Real.ChunkColumnSurvey survey =
+        Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
+    Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize - 1,
+                    survey.Stats.SolidCount);
   }
 
   [TestMethod]
@@ -162,11 +174,11 @@ public class ChunkColumnSurvey {
   public void Serialization() {
     MemoryTerrainHeightReader reader = new();
     // Fill requested chunk
-    reader.FillChunk(1, 1, Climate.Sealevel - 1, 1, 0);
+    reader.FillChunk(1, 1, 100 - 1, 1, 0);
     // Fill west chunk
-    reader.FillChunk(0, 1, Climate.Sealevel - 2, 0, 0);
+    reader.FillChunk(0, 1, 100 - 2, 0, 0);
     // Fill north chunk
-    reader.FillChunk(1, 0, Climate.Sealevel - 1, 1, 0);
+    reader.FillChunk(1, 0, 100 - 1, 1, 0);
     Real.ChunkColumnSurvey survey =
         Real.ChunkColumnSurvey.Create(null, reader, 1, 1, null, null);
     byte[] data = SerializerUtil.Serialize(survey);
@@ -174,7 +186,7 @@ public class ChunkColumnSurvey {
         SerializerUtil.Deserialize<Real.ChunkColumnSurvey>(data);
 
     Assert.AreEqual(survey.Stats.Roughness, copy.Stats.Roughness);
-    Assert.AreEqual(survey.Stats.AboveSea, copy.Stats.AboveSea);
+    Assert.AreEqual(survey.Stats.SolidCount, copy.Stats.SolidCount);
     Assert.AreEqual(survey.GetHeight(3, 5), copy.GetHeight(3, 5));
   }
 }

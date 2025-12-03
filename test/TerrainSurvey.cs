@@ -22,7 +22,7 @@ public class TerrainSurvey {
         out int chunkCount, ref incomplete);
     Assert.IsTrue(incomplete);
     Assert.AreEqual(1, chunkCount);
-    Assert.AreEqual(0, stats.AboveSea);
+    Assert.AreEqual(0, stats.SolidCount);
     Assert.AreEqual(0, stats.Roughness);
   }
 
@@ -50,7 +50,7 @@ public class TerrainSurvey {
     Assert.IsFalse(incomplete);
     Assert.AreEqual(1, chunkCount);
     Assert.AreEqual(GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    stats.AboveSea);
+                    stats.SolidCount);
     // The border between the circle's chunk and the neighboring chunks is
     // rough. Only the north and west borders are counted.
     Assert.AreEqual((circleHeight - surroundingHeight) *
@@ -77,7 +77,7 @@ public class TerrainSurvey {
     Assert.IsFalse(incomplete);
     Assert.AreEqual(4, chunkCount);
     Assert.AreEqual(4 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    stats.AboveSea);
+                    stats.SolidCount);
     Assert.AreEqual(4 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
                     stats.Roughness);
   }
@@ -101,7 +101,7 @@ public class TerrainSurvey {
     Assert.IsFalse(incomplete);
     Assert.AreEqual(9, chunkCount);
     Assert.AreEqual(9 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
-                    stats.AboveSea);
+                    stats.SolidCount);
     Assert.AreEqual(9 * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize,
                     stats.Roughness);
   }

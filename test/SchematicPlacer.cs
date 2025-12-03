@@ -73,7 +73,8 @@ public class SchematicPlacer {
     MockSchematicPlacerSupervisor supervisor = new();
     bool locationSelected = false;
     Real.SchematicPlacer placer = null;
-    BlockPos pos = new(3 * GlobalConstants.ChunkSize, 0, 3 * GlobalConstants.ChunkSize);
+    BlockPos pos =
+        new(3 * GlobalConstants.ChunkSize, 0, 3 * GlobalConstants.ChunkSize);
     bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsFalse(locationSelected);
       locationSelected = true;
@@ -82,8 +83,7 @@ public class SchematicPlacer {
       return true;
     }
     supervisor.TryFinalizeLocationMock = FinalizeLocation;
-    placer =
-        CreateGraniteBox(1, 1, 1, 0, pos, supervisor);
+    placer = CreateGraniteBox(1, 1, 1, 0, pos, supervisor);
 
     // Mark the chunk as loaded.
     Framework.Api.WorldManager.LoadChunkColumnPriority(3, 3);

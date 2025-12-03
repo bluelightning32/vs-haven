@@ -10,7 +10,7 @@ namespace Haven.Test;
 /// </summary>
 public class MemoryTerrainHeightReader : ITerrainHeightReader {
   private readonly HashSet<Vec2i> _requestedChunks = [];
-  private readonly Dictionary<Vec2i, ushort[]> _chunkHeights = [];
+  private readonly Dictionary<Vec2i, (ushort[], bool[])> _chunkData = [];
 
   public MemoryTerrainHeightReader() {}
 
@@ -20,37 +20,47 @@ public class MemoryTerrainHeightReader : ITerrainHeightReader {
 
   public void ClearRequestedChunks() { _requestedChunks.Clear(); }
 
-  public ushort[] GetHeights(IBlockAccessor accessor, int chunkX, int chunkZ) {
+  public (ushort[], bool[])
+      GetHeightsAndSolid(IBlockAccessor accessor, int chunkX, int chunkZ) {
     Vec2i key = new(chunkX, chunkZ);
     _requestedChunks.Add(key);
-    return _chunkHeights.GetValueOrDefault(key);
+    return _chunkData.GetValueOrDefault(key, (null, null));
+  }
+
+  private (ushort[], bool[]) GetOrCreateChunkData(int chunkX, int chunkZ) {
+    Vec2i key = new(chunkX, chunkZ);
+    if (!_chunkData.TryGetValue(key, out(ushort[], bool[]) data)) {
+      data =
+          new(new ushort[GlobalConstants.ChunkSize * GlobalConstants.ChunkSize],
+              new bool[GlobalConstants.ChunkSize * GlobalConstants.ChunkSize]);
+      _chunkData.Add(key, data);
+    }
+    return data;
   }
 
   public void FillChunk(int chunkX, int chunkZ, int intercept, double xslope,
                         double zslope) {
-    Vec2i key = new(chunkX, chunkZ);
-    if (!_chunkHeights.TryGetValue(key, out ushort[] heights)) {
-      heights =
-          new ushort[GlobalConstants.ChunkSize * GlobalConstants.ChunkSize];
-      _chunkHeights.Add(key, heights);
-    }
+    (ushort[] heights, bool[] solid) = GetOrCreateChunkData(chunkX, chunkZ);
     for (int z = 0; z < GlobalConstants.ChunkSize; ++z) {
       for (int x = 0; x < GlobalConstants.ChunkSize; ++x) {
         heights[x + z * GlobalConstants.ChunkSize] =
             (ushort)(intercept + x * xslope + z * zslope);
+        solid[x + z * GlobalConstants.ChunkSize] = true;
       }
     }
   }
 
   public void SetHeight(int x, int z, ushort height) {
-    Vec2i key =
-        new(x / GlobalConstants.ChunkSize, z / GlobalConstants.ChunkSize);
-    if (!_chunkHeights.TryGetValue(key, out ushort[] heights)) {
-      heights =
-          new ushort[GlobalConstants.ChunkSize * GlobalConstants.ChunkSize];
-      _chunkHeights.Add(key, heights);
-    }
+    (ushort[] heights, bool[] solid) = GetOrCreateChunkData(
+        x / GlobalConstants.ChunkSize, z / GlobalConstants.ChunkSize);
     heights[x % GlobalConstants.ChunkSize +
             z % GlobalConstants.ChunkSize * GlobalConstants.ChunkSize] = height;
+  }
+
+  public void SetSolid(int x, int z, bool solid) {
+    (ushort[] heights, bool[] solids) = GetOrCreateChunkData(
+        x / GlobalConstants.ChunkSize, z / GlobalConstants.ChunkSize);
+    solids[x % GlobalConstants.ChunkSize +
+           z % GlobalConstants.ChunkSize * GlobalConstants.ChunkSize] = solid;
   }
 }

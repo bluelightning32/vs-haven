@@ -161,7 +161,7 @@ public class FlatCircleLocator : IWorldGenerator {
     if (incomplete) {
       return false;
     }
-    if (stats.AboveSea * _circleArea / surveyedArea < _minAboveSea) {
+    if (stats.SolidCount * _circleArea / surveyedArea < _minAboveSea) {
       return false;
     }
     return true;

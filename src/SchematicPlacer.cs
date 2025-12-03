@@ -82,8 +82,7 @@ public class SchematicPlacer : IWorldGenerator {
         return false;
       }
       if (y >= 0) {
-        BlockPos updatedOffset =
-            new(Offset.X, Offset.Y + y, Offset.Z);
+        BlockPos updatedOffset = new(Offset.X, Offset.Y + y, Offset.Z);
         if (_supervisor.TryFinalizeLocation(this, updatedOffset)) {
           Offset = updatedOffset;
           _locationSearch = null;
