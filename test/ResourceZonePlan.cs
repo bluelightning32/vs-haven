@@ -201,4 +201,41 @@ public class ResourceZonePlan {
       }
     }
   }
+
+  [TestMethod]
+  public void SetCenter() {
+    List<Real.Structure> structures =
+        [Structure.Load("stone"), Structure.Load("cattailtops")];
+    List<Real.OffsetBlockSchematic> schematics = [];
+    NormalRandom rand = new(0);
+    while (schematics.Count < 5) {
+      foreach (Real.Structure structure in structures) {
+        schematics.AddRange(
+            structure.Select(Framework.Server.AssetManager, rand));
+      }
+    }
+    double minRadius = 100;
+    BlockPos center = new(10000, 100, 10000);
+    Real.ResourceZonePlan plan = new(null, center, minRadius, rand, schematics);
+    Assert.AreEqual(center, plan.Center);
+
+    // Verify all of the structures fit within the zone radius.
+    Real.AABBList zone = AABBList.MakeCylinder(center, plan.Radius, 1000);
+    foreach (Real.SchematicPlacer structure in plan.Structures) {
+      Assert.IsTrue(
+          zone.Contains(structure.Schematic.Outline, structure.Offset.AsVec3i));
+    }
+
+    // Update the center
+    BlockPos newCenter = new(500, 100, 500);
+    plan.Center = newCenter;
+    Assert.AreEqual(newCenter, plan.Center);
+
+    // Verify all of the structures fit within the zone radius.
+    zone = AABBList.MakeCylinder(newCenter, plan.Radius, 1000);
+    foreach (Real.SchematicPlacer structure in plan.Structures) {
+      Assert.IsTrue(
+          zone.Contains(structure.Schematic.Outline, structure.Offset.AsVec3i));
+    }
+  }
 }

@@ -42,6 +42,13 @@ public class FakeGameDbConnection : IGameDbConnection {
     _mapRegions.Clear();
   }
 
+  public void ForAllChunks(Action<DbChunk> action) {
+    foreach (KeyValuePair<ulong, byte[]> chunk in _chunks) {
+      action(new DbChunk(ChunkPos.FromChunkIndex_saveGamev2(chunk.Key),
+                         chunk.Value));
+    }
+  }
+
   public IEnumerable<DbChunk> GetAllChunks() {
     foreach (KeyValuePair<ulong, byte[]> chunk in _chunks) {
       yield return new DbChunk(ChunkPos.FromChunkIndex_saveGamev2(chunk.Key),

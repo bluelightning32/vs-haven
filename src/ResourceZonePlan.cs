@@ -3,13 +3,33 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using ProtoBuf;
+
 using Vintagestory.API.MathTools;
 
 namespace Haven;
 
+[ProtoContract]
 public class ResourceZonePlan {
-  public BlockPos Center { get; private set; }
-  public double Radius { get; private set; }
+  [ProtoMember(1)]
+  private BlockPos _center;
+  public BlockPos Center {
+    get { return _center; }
+    set {
+      int xdiff = value.X - _center.X;
+      int ydiff = value.Y - _center.Y;
+      int zdiff = value.Z - _center.Z;
+      _center = value;
+      foreach (SchematicPlacer schematic in _structures) {
+        schematic.Offset.X += xdiff;
+        schematic.Offset.Y += ydiff;
+        schematic.Offset.Z += zdiff;
+      }
+    }
+  }
+  [ProtoMember(2)]
+  public double Radius { get; set; }
+  [ProtoMember(3)]
   private readonly List<SchematicPlacer> _structures = [];
   public IReadOnlyList<SchematicPlacer> Structures {
     get { return _structures; }
@@ -28,7 +48,7 @@ public class ResourceZonePlan {
   public ResourceZonePlan(ISchematicPlacerSupervisor supervisor,
                           BlockPos center, double minRadius, IRandom rand,
                           IEnumerable<OffsetBlockSchematic> structures) {
-    Center = center;
+    _center = center;
     Radius = minRadius;
     double radiusSq = Radius * Radius;
     List<KeyValuePair<Vec2d, OffsetBlockSchematic>> placement = new();
@@ -119,8 +139,9 @@ public class ResourceZonePlan {
   /// <param name="startPos">
   /// the start position (lower bound) for the structure</param>
   /// <param name="structure"></param>
-  private void ExpandRadiusIfNecessary(BlockPos startPos,
-                                       OffsetBlockSchematic structure) {
+  /// <returns>true if the radius was expanded</returns>
+  public bool ExpandRadiusIfNecessary(BlockPos startPos,
+                                      OffsetBlockSchematic structure) {
     double radiusSq = Radius * Radius;
     // Calculate the rectangle upper bound position of the structure, then move
     // it to the first quadrant using abs.
@@ -131,7 +152,9 @@ public class ResourceZonePlan {
     double needRadiusSq = x * x + z * z;
     if (needRadiusSq > radiusSq) {
       Radius = Math.Sqrt(needRadiusSq);
+      return true;
     }
+    return false;
   }
 
   /// <summary>
