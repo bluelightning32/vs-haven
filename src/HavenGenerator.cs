@@ -31,6 +31,8 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
   /// </summary>
   public bool GenerationDone { get; private set; }
 
+  public BlockPos Center => _centerLocator.Center;
+
   public HavenGenerator(IWorldAccessor worldForResolve, IChunkLoader loader,
                         ILogger logger, ITerrainHeightReader reader,
                         BlockPos center, ResourceZoneConfig config) {
@@ -41,10 +43,10 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
     rand.InitPositionSeed(center.X, center.Y, center.Z);
     _resourceZone = new(this, config, center, rand);
     Terrain = new(reader);
-    _centerLocator =
-        new(Terrain, new(_resourceZone.Center.X, _resourceZone.Center.Z),
-            (int)_resourceZone.Radius, config.MaxRoughnessPerimeter,
-            config.MaxRoughnessArea, config.MinAboveSea);
+    _centerLocator = new(
+        logger, Terrain, new(_resourceZone.Center.X, _resourceZone.Center.Z),
+        (int)_resourceZone.Radius, config.MaxRoughnessPerimeter,
+        config.MaxRoughnessArea, config.MinLandRatio);
   }
 
   public bool TryFinalizeLocation(SchematicPlacer placer, BlockPos offset) {
@@ -76,6 +78,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
       if (_centerLocator.Failed) {
         _logger.Error(
             $"Failed to find a suitable haven location near {_resourceZone.Center}");
+        GenerationDone = true;
         return true;
       }
       _resourceZone.Center = _centerLocator.Center;
@@ -111,6 +114,6 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
     Loader = loader;
     _logger = logger;
     Terrain.Restore(reader);
-    _centerLocator.Restore(Terrain);
+    _centerLocator.Restore(logger, Terrain);
   }
 }

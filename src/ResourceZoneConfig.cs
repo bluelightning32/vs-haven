@@ -15,7 +15,7 @@ public class ResourceZoneConfig {
   [JsonProperty]
   public double MaxRoughnessArea = 0.75;
   [JsonProperty]
-  public double MinAboveSea = 0.9;
+  public double MinLandRatio = 0.9;
 
   private IWorldAccessor _worldForResolve = null;
   private ICollection<Structure> _structures = null;

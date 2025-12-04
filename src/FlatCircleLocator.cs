@@ -73,9 +73,10 @@ public class FlatCircleLocator : IWorldGenerator {
 
   private int _circleArea;
 
+  private ILogger _logger;
   private TerrainSurvey _terrain;
 
-  public const int MaxAttempts = 100;
+  public const int MaxAttempts = 200;
 
   /// <summary>
   /// Survey the area for a suitable location for a haven. Note that the
@@ -92,9 +93,10 @@ public class FlatCircleLocator : IWorldGenerator {
   /// the roughness allowed per block of the center
   /// </param>
   /// <param name="minSolid">minimum land (as opposed to water) ratio</param>
-  public FlatCircleLocator(TerrainSurvey terrain, Vec2i start, int radius,
-                           double maxRoughnessPerimeter,
+  public FlatCircleLocator(ILogger logger, TerrainSurvey terrain, Vec2i start,
+                           int radius, double maxRoughnessPerimeter,
                            double maxRoughnessArea, double minSolid) {
+    _logger = logger;
     _terrain = terrain;
     _start = start.Copy();
     _radius = radius;
@@ -115,7 +117,8 @@ public class FlatCircleLocator : IWorldGenerator {
   /// deserialized.
   /// </summary>
   /// <param name="terrain"></param>
-  public void Restore(TerrainSurvey terrain) {
+  public void Restore(ILogger logger, TerrainSurvey terrain) {
+    _logger = logger;
     _terrain = terrain;
     _circleArea = (int)(Math.PI * _radius * _radius);
   }
@@ -175,6 +178,10 @@ public class FlatCircleLocator : IWorldGenerator {
       return false;
     }
     _y = stats.SumHeight / surveyedArea;
+    _logger.Build(
+        $"Located flat circle at ({Center}) with radius {_radius} and " +
+        $"roughness {stats.Roughness / (double)surveyedArea} and " +
+        $"{stats.SolidCount / (double)surveyedArea} solid ratio.");
     return true;
   }
 

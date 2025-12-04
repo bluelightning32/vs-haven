@@ -78,7 +78,8 @@ public class HavenSystem : ModSystem {
       }
       if (_activeRevertableGenerator.GenerationDone) {
         if (_activeRevertableGenerator.Commit(_revertable)) {
-          Logger.Build("Manual haven generation done.");
+          Logger.Build(
+              $"Manual haven generation done with center at {_activeRevertableGenerator.Center}.");
           _activeRevertableGenerator = null;
         }
       }

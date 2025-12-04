@@ -16,8 +16,9 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
-    Real.FlatCircleLocator locator = new(
-        survey, new(center, center), GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
+    Real.FlatCircleLocator locator =
+        new(Framework.Api.Logger, survey, new(center, center),
+            GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
     Assert.IsFalse(locator.Generate(null));
 
     // Fill nearby chunks
@@ -43,8 +44,9 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 2.5);
-    Real.FlatCircleLocator locator = new(
-        survey, new(center, center), GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
+    Real.FlatCircleLocator locator =
+        new(Framework.Api.Logger, survey, new(center, center),
+            GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
 
     // Make the initial chunk not count as land so that the locator has to
     // search other locations.
@@ -83,8 +85,9 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 2.5);
-    Real.FlatCircleLocator locator = new(
-        survey, new(center, center), GlobalConstants.ChunkSize / 2, 0, 0, 0);
+    Real.FlatCircleLocator locator =
+        new(Framework.Api.Logger, survey, new(center, center),
+            GlobalConstants.ChunkSize / 2, 0, 0, 0);
 
     // Give the initial location a slope so that it is too rough.
     reader.FillChunk(2, 2, 1, 1, 1);
@@ -122,8 +125,9 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
-    Real.FlatCircleLocator locator = new(
-        survey, new(center, center), GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
+    Real.FlatCircleLocator locator =
+        new(Framework.Api.Logger, survey, new(center, center),
+            GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
     Assert.IsFalse(locator.Generate(null));
 
     // Fill nearby chunks
@@ -145,7 +149,7 @@ public class FlatCircleLocator {
     byte[] data = SerializerUtil.Serialize(locator);
     Real.FlatCircleLocator copy =
         SerializerUtil.Deserialize<Real.FlatCircleLocator>(data);
-    copy.Restore(survey);
+    copy.Restore(Framework.Api.Logger, survey);
     Assert.AreEqual(new(center, 200, center), locator.Center);
   }
 }
