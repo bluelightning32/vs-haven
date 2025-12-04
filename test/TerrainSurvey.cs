@@ -266,6 +266,175 @@ public class TerrainSurvey {
   }
 
   [TestMethod]
+  public void GetAnnulusStatsR0_1ChunkCenter() {
+    MemoryTerrainHeightReader reader = new();
+
+    // Fill the chunk that holds the annulus
+    const int diskHeight = 200;
+    reader.FillChunk(1, 1, diskHeight, 1, 1);
+
+    Real.TerrainSurvey survey = new(reader);
+    int center = (int)(GlobalConstants.ChunkSize * 1.5);
+    bool incomplete = false;
+    // A annulus of [0,1] covers 4 blocks in this shape:
+    //   x
+    // x o x
+    //   x
+    TerrainStats stats = survey.GetAnnulusStats(
+        null, new Vec2i(center, center), 0, 1, out int area, ref incomplete);
+
+    Assert.IsFalse(incomplete);
+    Assert.AreEqual(4, stats.SolidCount);
+    Assert.AreEqual(4, area);
+    int chunkCenter = GlobalConstants.ChunkSize / 2;
+    Assert.AreEqual(4 * diskHeight + 2 * (chunkCenter - 1) + 4 * chunkCenter +
+                        2 * (chunkCenter + 1),
+                    stats.SumHeight);
+    Assert.AreEqual(8, stats.Roughness);
+  }
+
+  [TestMethod]
+  public void GetAnnulusStatsR1_2ChunkCenter() {
+    MemoryTerrainHeightReader reader = new();
+
+    // Fill the chunk that holds the annulus
+    const int diskHeight = 200;
+    reader.FillChunk(1, 1, diskHeight, 1, 1);
+
+    Real.TerrainSurvey survey = new(reader);
+    int center = (int)(GlobalConstants.ChunkSize * 1.5);
+    bool incomplete = false;
+    // A annulus of [1,2] covers 4 blocks in this shape:
+    //     x
+    //   x o x
+    // x o o o x
+    //   x o x
+    //     x
+    TerrainStats stats = survey.GetAnnulusStats(
+        null, new Vec2i(center, center), 1, 2, out int area, ref incomplete);
+
+    Assert.IsFalse(incomplete);
+    Assert.AreEqual(8, stats.SolidCount);
+    Assert.AreEqual(8, area);
+    Assert.AreEqual(16, stats.Roughness);
+  }
+
+  [TestMethod]
+  public void GetAnnulusStatsR1_2SweepDiag() {
+    MemoryTerrainHeightReader reader = new();
+
+    // Fill the chunk that holds the annulus
+    const int diskHeight = 200;
+    // Fill nearby chunks
+    for (int x = 0; x < 3; ++x) {
+      for (int z = 0; z < 3; ++z) {
+        reader.FillChunk(x, z, diskHeight, 0, 0);
+      }
+    }
+
+    Real.TerrainSurvey survey = new(reader);
+    for (int i = 0; i < GlobalConstants.ChunkSize; ++i) {
+      int center = (int)(GlobalConstants.ChunkSize * 1.5) + i;
+      bool incomplete = false;
+      // A annulus of [1,2] covers 4 blocks in this shape:
+      //     x
+      //   x o x
+      // x o o o x
+      //   x o x
+      //     x
+      TerrainStats stats = survey.GetAnnulusStats(
+          null, new Vec2i(center, center), 1, 2, out int area, ref incomplete);
+
+      Assert.IsFalse(incomplete);
+      Assert.AreEqual(8, stats.SolidCount);
+      Assert.AreEqual(8, area);
+    }
+  }
+
+  [TestMethod]
+  public void TraverseAnnulusLargeHoleSweepEast() {
+    MemoryTerrainHeightReader reader = new();
+    // Fill nearby chunks
+    for (int x = 0; x < 6; ++x) {
+      for (int z = 0; z < 5; ++z) {
+        reader.FillChunk(x, z, 200, 0, 0);
+      }
+    }
+    Real.TerrainSurvey survey = new(reader);
+
+    int center = (int)(GlobalConstants.ChunkSize * 2.5);
+    int radius = GlobalConstants.ChunkSize * 2;
+    int holeRadius = GlobalConstants.ChunkSize * 2 - 1;
+    for (int offset = 0; offset < GlobalConstants.ChunkSize; ++offset) {
+      bool incomplete = false;
+      TerrainStats annulusStats = survey.GetAnnulusStats(
+          null, new Vec2i(center + offset, center), holeRadius, radius,
+          out int annulusArea, ref incomplete);
+      Assert.IsFalse(incomplete);
+      Assert.AreEqual(400, annulusArea);
+      Assert.AreEqual(400, annulusStats.SolidCount);
+    }
+  }
+
+  [TestMethod]
+  public void TraverseAnnulusLargeSweepEast() {
+    MemoryTerrainHeightReader reader = new();
+    // Fill nearby chunks
+    for (int x = 0; x < 6; ++x) {
+      for (int z = 0; z < 5; ++z) {
+        reader.FillChunk(x, z, 200, 0, 0);
+      }
+    }
+    Real.TerrainSurvey survey = new(reader);
+
+    int center = (int)(GlobalConstants.ChunkSize * 2.5);
+    int radius = GlobalConstants.ChunkSize * 2;
+    int holeRadius = 1;
+    for (int offset = 0; offset < GlobalConstants.ChunkSize; ++offset) {
+      bool incomplete = false;
+      TerrainStats annulusStats = survey.GetAnnulusStats(
+          null, new Vec2i(center + offset, center), holeRadius, radius,
+          out int annulusArea, ref incomplete);
+      Assert.IsFalse(incomplete);
+      Assert.AreEqual(12848, annulusArea);
+      Assert.AreEqual(12848, annulusStats.SolidCount);
+    }
+  }
+
+  [TestMethod]
+  public void TraverseAnnulus2CRCentered() {
+    MemoryTerrainHeightReader reader = new();
+    // Fill nearby chunks
+    for (int x = 0; x < 5; ++x) {
+      for (int z = 0; z < 5; ++z) {
+        reader.FillChunk(x, z, 200 + x * GlobalConstants.ChunkSize, 0, 0);
+      }
+    }
+    Real.TerrainSurvey survey = new(reader);
+
+    int center = (int)(GlobalConstants.ChunkSize * 2.5);
+    Dictionary<int, int> areaByRadius = [];
+    for (int radius = 0; radius <= GlobalConstants.ChunkSize * 2; ++radius) {
+      bool incomplete = false;
+      TerrainStats diskStats =
+          survey.GetDiskStats(null, new Vec2i(center, center), radius,
+                              out int diskArea, ref incomplete);
+      Assert.IsFalse(incomplete);
+      areaByRadius.Add(radius, diskArea);
+      for (int holeRadius = 0; holeRadius <= radius; ++holeRadius) {
+        TerrainStats annulusStats =
+            survey.GetAnnulusStats(null, new Vec2i(center, center), holeRadius,
+                                   radius, out int annulusArea, ref incomplete);
+        Assert.IsFalse(incomplete);
+        int holeArea = areaByRadius[holeRadius];
+        Assert.AreEqual(diskArea - holeArea, annulusArea,
+                        $"area mismatch at {holeRadius}, {radius}");
+        Assert.AreEqual(diskArea - holeArea, annulusStats.SolidCount);
+      }
+    }
+  }
+
+  [TestMethod]
   public void GetHeightUnloaded() {
     MemoryTerrainHeightReader reader = new();
 

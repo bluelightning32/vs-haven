@@ -105,36 +105,86 @@ public class TerrainSurvey {
   }
 
   private void
-  TraverseDiskRow(IBlockAccessor accessor, Vec2i center, int radiusSq,
-                  int chunkZ, int zThickest, int zThinnest,
-                  Action<int, int, ChunkColumnSurvey> traverseFullChunk,
-                  Action<int, int, ChunkColumnSurvey> traversePartialChunk,
-                  ref bool incomplete) {
+  TraverseAnnulusRow(IBlockAccessor accessor, Vec2i center, int holeRadiusSq,
+                     int radiusSq, int chunkZ, int zThickest, int zThinnest,
+                     Action<int, int, ChunkColumnSurvey> traverseFullChunk,
+                     Action<int, int, ChunkColumnSurvey> traversePartialChunk,
+                     ref bool incomplete) {
     // Calculate the x coordinates for the part of the row that intersects the
     // disk.
     int zPartialOffset = zThickest - center.Y;
-    int xPartialOffset =
+    int xOuterPartialOffset =
         (int)Math.Sqrt(radiusSq - zPartialOffset * zPartialOffset);
-    int chunkXPartialBegin = BlockStartToChunk(center.X - xPartialOffset);
-    int chunkXPartialEnd = BlockEndToChunk(center.X + xPartialOffset);
+    int chunkXOuterPartialBegin =
+        BlockStartToChunk(center.X - xOuterPartialOffset);
+    int chunkXOuterPartialEnd = BlockEndToChunk(center.X + xOuterPartialOffset);
     // Calculate the x coordinates for the part of the row that are fully
     // covered by the disk.
     int zFullOffset = zThinnest - center.Y;
-    int xFullOffsetSq = radiusSq - zFullOffset * zFullOffset;
-    if (xFullOffsetSq < GlobalConstants.ChunkSize * GlobalConstants.ChunkSize) {
+    int xOuterFullOffsetSq = radiusSq - zFullOffset * zFullOffset;
+    if (xOuterFullOffsetSq <
+        GlobalConstants.ChunkSize * GlobalConstants.ChunkSize) {
       // No part of the row is fully covered by the disk.
-      TraverseRow(accessor, chunkXPartialBegin, chunkXPartialEnd, chunkZ,
+      TraverseRow(accessor, chunkXOuterPartialBegin, chunkXOuterPartialEnd,
+                  chunkZ, traversePartialChunk, ref incomplete);
+      return;
+    }
+    int xOuterFullOffset = (int)Math.Sqrt(xOuterFullOffsetSq);
+    int chunkXOuterFullBegin = BlockEndToChunk(center.X - xOuterFullOffset);
+    int chunkXOuterFullEnd = BlockStartToChunk(center.X + xOuterFullOffset);
+
+    int xInnerPartialOffsetSq = holeRadiusSq - zPartialOffset * zPartialOffset;
+    if (xInnerPartialOffsetSq < 0) {
+      // No part of the row is covered by the hole.
+      TraverseRow(accessor, chunkXOuterPartialBegin, chunkXOuterFullBegin,
+                  chunkZ, traversePartialChunk, ref incomplete);
+      TraverseRow(accessor, chunkXOuterFullBegin, chunkXOuterFullEnd, chunkZ,
+                  traverseFullChunk, ref incomplete);
+      TraverseRow(accessor, chunkXOuterFullEnd, chunkXOuterPartialEnd, chunkZ,
                   traversePartialChunk, ref incomplete);
       return;
     }
-    int xFullOffset = (int)Math.Sqrt(xFullOffsetSq);
-    int chunkXFullBegin = BlockEndToChunk(center.X - xFullOffset);
-    int chunkXFullEnd = BlockStartToChunk(center.X + xFullOffset);
-    TraverseRow(accessor, chunkXPartialBegin, chunkXFullBegin, chunkZ,
+    int xInnerPartialOffset = (int)Math.Sqrt(xInnerPartialOffsetSq);
+    int chunkXInnerPartialBegin =
+        BlockStartToChunk(center.X - xInnerPartialOffset);
+    int chunkXInnerPartialEnd = BlockEndToChunk(center.X + xInnerPartialOffset);
+
+    // Handle the outer sections of the annulus.
+    if (chunkXOuterFullBegin < chunkXInnerPartialBegin) {
+      TraverseRow(accessor, chunkXOuterPartialBegin, chunkXOuterFullBegin,
+                  chunkZ, traversePartialChunk, ref incomplete);
+      TraverseRow(accessor, chunkXOuterFullBegin, chunkXInnerPartialBegin,
+                  chunkZ, traverseFullChunk, ref incomplete);
+    } else {
+      TraverseRow(accessor, chunkXOuterPartialBegin, chunkXInnerPartialBegin,
+                  chunkZ, traversePartialChunk, ref incomplete);
+    }
+    if (chunkXOuterFullEnd > chunkXInnerPartialEnd) {
+      TraverseRow(accessor, chunkXInnerPartialEnd, chunkXOuterFullEnd, chunkZ,
+                  traverseFullChunk, ref incomplete);
+      TraverseRow(accessor, chunkXOuterFullEnd, chunkXOuterPartialEnd, chunkZ,
+                  traversePartialChunk, ref incomplete);
+    } else {
+      TraverseRow(accessor, chunkXInnerPartialEnd, chunkXOuterPartialEnd,
+                  chunkZ, traversePartialChunk, ref incomplete);
+    }
+
+    // Handle the inner edge of the annulus.
+    int xInnerFullOffsetSq = holeRadiusSq - zFullOffset * zFullOffset;
+    if (xInnerFullOffsetSq <
+        GlobalConstants.ChunkSize * GlobalConstants.ChunkSize) {
+      // No part of the row is fully covered by the hole.
+      TraverseRow(accessor, chunkXInnerPartialBegin, chunkXInnerPartialEnd,
+                  chunkZ, traversePartialChunk, ref incomplete);
+      return;
+    }
+    int xInnerFullOffset = (int)Math.Sqrt(xInnerFullOffsetSq);
+    int chunkXInnerFullBegin = BlockEndToChunk(center.X - xInnerFullOffset);
+    int chunkXInnerFullEnd = BlockStartToChunk(center.X + xInnerFullOffset);
+
+    TraverseRow(accessor, chunkXInnerPartialBegin, chunkXInnerFullBegin, chunkZ,
                 traversePartialChunk, ref incomplete);
-    TraverseRow(accessor, chunkXFullBegin, chunkXFullEnd, chunkZ,
-                traverseFullChunk, ref incomplete);
-    TraverseRow(accessor, chunkXFullEnd, chunkXPartialEnd, chunkZ,
+    TraverseRow(accessor, chunkXInnerFullEnd, chunkXInnerPartialEnd, chunkZ,
                 traversePartialChunk, ref incomplete);
   }
 
@@ -153,10 +203,12 @@ public class TerrainSurvey {
   }
 
   public void
-  TraverseDisk(IBlockAccessor accessor, Vec2i center, int radius,
-               Action<int, int, ChunkColumnSurvey> traverseFullChunk,
-               Action<int, int, ChunkColumnSurvey> traversePartialChunk,
-               ref bool incomplete) {
+  TraverseAnnulus(IBlockAccessor accessor, Vec2i center, int holeRadius,
+                  int radius,
+                  Action<int, int, ChunkColumnSurvey> traverseFullChunk,
+                  Action<int, int, ChunkColumnSurvey> traversePartialChunk,
+                  ref bool incomplete) {
+    int holeRadiusSq = holeRadius < 0 ? -1 : holeRadius * holeRadius;
     int radiusSq = radius * radius;
     int y = center.Y - radius;
     // Move y to the north end of the following chunk so that it is in a known
@@ -166,9 +218,10 @@ public class TerrainSurvey {
     for (; y <= center.Y; y += GlobalConstants.ChunkSize) {
       // y points to one chunk south of what needs to be added in this
       // iteration. Here, each row is thicker on the southern side of the chunk.
-      TraverseDiskRow(accessor, center, radiusSq, BlockStartToChunk(y) - 1, y,
-                      y - GlobalConstants.ChunkSize, traverseFullChunk,
-                      traversePartialChunk, ref incomplete);
+      TraverseAnnulusRow(accessor, center, holeRadiusSq, radiusSq,
+                         BlockStartToChunk(y) - 1, y,
+                         y - GlobalConstants.ChunkSize, traverseFullChunk,
+                         traversePartialChunk, ref incomplete);
     }
 
     // Process the center of the disk. y points to the row to the south of the
@@ -176,18 +229,28 @@ public class TerrainSurvey {
     int yThinnest = center.Y > y - GlobalConstants.ChunkSize / 2
                         ? y - GlobalConstants.ChunkSize
                         : y;
-    TraverseDiskRow(accessor, center, radiusSq, BlockStartToChunk(center.Y),
-                    center.Y, yThinnest, traverseFullChunk,
-                    traversePartialChunk, ref incomplete);
+    TraverseAnnulusRow(accessor, center, holeRadiusSq, radiusSq,
+                       BlockStartToChunk(center.Y), center.Y, yThinnest,
+                       traverseFullChunk, traversePartialChunk, ref incomplete);
 
     // Process the southern half of the disk.
     for (; y <= center.Y + radius; y += GlobalConstants.ChunkSize) {
       // y points to the northmost block of the chunk row to be added in this
       // iteration. Here, each row is thicker on the northern side of the chunk.
-      TraverseDiskRow(accessor, center, radiusSq, BlockStartToChunk(y), y,
-                      y + GlobalConstants.ChunkSize, traverseFullChunk,
-                      traversePartialChunk, ref incomplete);
+      TraverseAnnulusRow(accessor, center, holeRadiusSq, radiusSq,
+                         BlockStartToChunk(y), y, y + GlobalConstants.ChunkSize,
+                         traverseFullChunk, traversePartialChunk,
+                         ref incomplete);
     }
+  }
+
+  public void
+  TraverseDisk(IBlockAccessor accessor, Vec2i center, int radius,
+               Action<int, int, ChunkColumnSurvey> traverseFullChunk,
+               Action<int, int, ChunkColumnSurvey> traversePartialChunk,
+               ref bool incomplete) {
+    TraverseAnnulus(accessor, center, 0, radius, traverseFullChunk,
+                    traversePartialChunk, ref incomplete);
   }
 
   /// <summary>
@@ -207,9 +270,33 @@ public class TerrainSurvey {
   public TerrainStats GetDiskStats(IBlockAccessor accessor, Vec2i center,
                                    int radius, out int area,
                                    ref bool incomplete) {
+    return GetAnnulusStats(accessor, center, -1, radius, out area,
+                           ref incomplete);
+  }
+
+  /// <summary>
+  /// Gets the stats for all blocks covered by the given annulus. A block is
+  /// considered to be covered if (minRadius &lt;= dist(pos,center) &lt;=
+  /// maxRadius).
+  /// </summary>
+  /// <param name="accessor"></param>
+  /// <param name="center">annulus center</param>
+  /// <param name="holeRadius">block closer to the center than this are part of
+  /// the hole</param> <param name="radius">radius of the outer disk</param>
+  /// <param name="area">
+  /// the number of blocks covered by the annulus
+  /// </param>
+  /// <param name="incomplete">
+  /// set to true if one or more of the requested chunks was unavailable
+  /// </param>
+  /// <returns>the stats for all blocks in the annulus</returns>
+  public TerrainStats GetAnnulusStats(IBlockAccessor accessor, Vec2i center,
+                                      int holeRadius, int radius, out int area,
+                                      ref bool incomplete) {
     int localArea = 0;
     bool localIncomplete = false;
     TerrainStats results = new();
+    int holeRadiusSq = holeRadius < 0 ? -1 : holeRadius * holeRadius;
     int radiusSq = radius * radius;
     void TraverseFullChunk(int chunkX, int chunkZ, ChunkColumnSurvey chunk) {
       localArea += GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
@@ -225,7 +312,8 @@ public class TerrainSurvey {
         int zOffsetSq = zOffset * zOffset;
         for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
           int xOffset = chunkX * GlobalConstants.ChunkSize + x - center.X;
-          if (zOffsetSq + xOffset * xOffset <= radiusSq) {
+          int distSq = zOffsetSq + xOffset * xOffset;
+          if (holeRadiusSq < distSq && distSq <= radiusSq) {
             int height = chunk.Heights[offset];
             int northHeight;
             if (z == 0) {
@@ -262,8 +350,8 @@ public class TerrainSurvey {
         }
       }
     }
-    TraverseDisk(accessor, center, radius, TraverseFullChunk,
-                 TraversePartialChunk, ref incomplete);
+    TraverseAnnulus(accessor, center, holeRadius, radius, TraverseFullChunk,
+                    TraversePartialChunk, ref incomplete);
     incomplete |= localIncomplete;
     area = localArea;
     return results;
