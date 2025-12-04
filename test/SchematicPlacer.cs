@@ -24,7 +24,7 @@ public class SchematicPlacer {
   public void PlacesOnLoadedChunks() {
     MockSchematicPlacerSupervisor supervisor = new();
     Real.SchematicPlacer placer =
-        CreateGraniteBox(1, 1, 1, 0, new BlockPos(0, 0, 0), supervisor);
+        CreateGraniteBox(1, 1, 1, 0, new BlockPos(0, 1, 0), supervisor);
     IBulkBlockAccessor accessor =
         Framework.Server.GetBlockAccessorBulkUpdate(false, false);
 
@@ -34,7 +34,7 @@ public class SchematicPlacer {
     supervisor.FakeTerrain.FillChunk(0, 0, 0, 0, 0);
 
     Assert.IsTrue(placer.Generate(accessor));
-    CollectionAssert.AreEquivalent(new BlockPos[] { new(0, 0, 0) },
+    CollectionAssert.AreEquivalent(new BlockPos[] { new(0, 1, 0) },
                                    accessor.StagedBlocks.Keys);
   }
 
@@ -42,7 +42,7 @@ public class SchematicPlacer {
   public void OnlyPlacesBlocksOnce() {
     MockSchematicPlacerSupervisor supervisor = new();
     Real.SchematicPlacer placer =
-        CreateGraniteBox(1, 1, 1, 0, new BlockPos(0, 0, 0), supervisor);
+        CreateGraniteBox(1, 1, 1, 0, new BlockPos(0, 1, 0), supervisor);
     IBulkBlockAccessor accessor =
         Framework.Server.GetBlockAccessorBulkUpdate(false, false);
 
@@ -52,7 +52,7 @@ public class SchematicPlacer {
     supervisor.FakeTerrain.FillChunk(0, 0, 0, 0, 0);
 
     Assert.IsTrue(placer.Generate(accessor));
-    CollectionAssert.AreEquivalent(new BlockPos[] { new(0, 0, 0) },
+    CollectionAssert.AreEquivalent(new BlockPos[] { new(0, 1, 0) },
                                    accessor.StagedBlocks.Keys);
 
     // Call Generate again and verify it does not modify any more blocks,
@@ -74,7 +74,7 @@ public class SchematicPlacer {
     bool locationSelected = false;
     Real.SchematicPlacer placer = null;
     BlockPos pos =
-        new(3 * GlobalConstants.ChunkSize, 100, 3 * GlobalConstants.ChunkSize);
+        new(3 * GlobalConstants.ChunkSize, 101, 3 * GlobalConstants.ChunkSize);
     bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsFalse(locationSelected);
       locationSelected = true;
@@ -137,7 +137,7 @@ public class SchematicPlacer {
   public void SerializationRemembersPlacedBlocks() {
     MockSchematicPlacerSupervisor supervisor = new();
     Real.SchematicPlacer placer =
-        CreateGraniteBox(1, 1, 1, 0, new BlockPos(0, 0, 0), supervisor);
+        CreateGraniteBox(1, 1, 1, 0, new BlockPos(0, 1, 0), supervisor);
     IBulkBlockAccessor accessor =
         Framework.Server.GetBlockAccessorBulkUpdate(false, false);
 
@@ -147,7 +147,7 @@ public class SchematicPlacer {
     supervisor.FakeTerrain.FillChunk(0, 0, 0, 0, 0);
 
     Assert.IsTrue(placer.Generate(accessor));
-    CollectionAssert.AreEquivalent(new BlockPos[] { new(0, 0, 0) },
+    CollectionAssert.AreEquivalent(new BlockPos[] { new(0, 1, 0) },
                                    accessor.StagedBlocks.Keys);
 
     byte[] data = SerializerUtil.Serialize(placer);

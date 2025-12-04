@@ -14,20 +14,25 @@ public class TerrainProbe : IEquatable<TerrainProbe> {
 
   /// <summary>
   /// Minimum allowed Y value of the surface of the terrain at the X, Z
-  /// location. This is measured after the OffsetY is applied.
+  /// location, relative to the structure Y position. This is measured after the
+  /// OffsetY is applied. So if OffsetY=0 and YMin=0, then the lowest the
+  /// structure can be placed is at the same Y value as the surface (which
+  /// replaces the top block of the surface with the structure).
   /// </summary>
   [JsonProperty]
   public int YMin;
   /// <summary>
   /// One greater than the maximum allowed Y value of the surface of the terrain
-  /// at the X, Z location. This is measured after the OffsetY is applied.
+  /// at the X, Z location. This is measured after the OffsetY is applied. So a
+  /// value of 1 means that the surface cannot be higher than the first block of
+  /// the structure (the structure can replace the first layer of the surface).
   /// </summary>
   [JsonProperty]
-  public int YMax;
+  public int YEnd;
 
   public bool Equals(TerrainProbe other) {
     return X == other.X && Z == other.Z && YMin == other.YMin &&
-           YMax == other.YMax;
+           YEnd == other.YEnd;
   }
 
   public override bool Equals(object obj) {

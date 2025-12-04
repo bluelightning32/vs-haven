@@ -82,11 +82,11 @@ public class OffsetBlockSchematic : BlockSchematic {
       if (rowBox.Z1 < rowBox.Z2) {
         TerrainProbe north =
             new() { X = x, Z = rowBox.Z1, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, x, rowBox.Z1) };
+                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z1) };
         probes.Add(north);
         TerrainProbe south =
             new() { X = x, Z = rowBox.Z2 - 1, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, x, rowBox.Z2 - 1) };
+                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z2 - 1) };
         probes.Add(south);
       }
     }
@@ -98,11 +98,11 @@ public class OffsetBlockSchematic : BlockSchematic {
       if (rowBox.Z1 < rowBox.Z2) {
         TerrainProbe north =
             new() { X = x, Z = rowBox.Z1, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, x, rowBox.Z1) };
+                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z1) };
         probes.Add(north);
         TerrainProbe south =
             new() { X = x, Z = rowBox.Z2 - 1, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, x, rowBox.Z2 - 1) };
+                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z2 - 1) };
         probes.Add(south);
       }
     }
@@ -113,11 +113,11 @@ public class OffsetBlockSchematic : BlockSchematic {
       if (rowBox.X1 < rowBox.X2) {
         TerrainProbe west =
             new() { X = rowBox.X1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, rowBox.X1, z) };
+                    YEnd = GetProbeYMax(probeSolid, rowBox.X1, z) };
         probes.Add(west);
         TerrainProbe east =
             new() { X = rowBox.X2 - 1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, rowBox.X2 - 1, z) };
+                    YEnd = GetProbeYMax(probeSolid, rowBox.X2 - 1, z) };
         probes.Add(east);
       }
     }
@@ -129,11 +129,11 @@ public class OffsetBlockSchematic : BlockSchematic {
       if (rowBox.X1 < rowBox.X2) {
         TerrainProbe west =
             new() { X = rowBox.X1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, rowBox.X1, z) };
+                    YEnd = GetProbeYMax(probeSolid, rowBox.X1, z) };
         probes.Add(west);
         TerrainProbe east =
             new() { X = rowBox.X2 - 1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YMax = GetProbeYMax(probeSolid, rowBox.X2 - 1, z) };
+                    YEnd = GetProbeYMax(probeSolid, rowBox.X2 - 1, z) };
         probes.Add(east);
       }
     }
@@ -217,12 +217,14 @@ public class OffsetBlockSchematic : BlockSchematic {
   /// </returns>
   public int ProbeTerrain(TerrainSurvey terrain, IBlockAccessor accessor,
                           Vec2i startPos) {
-    // This is the acceptable y range so far.
+    // This is the acceptable y range so far. Note that the probe YMin and YEnd
+    // are in terms of the difference between the structure and surface.
+    // However, yMin and yMax are the y range for the structure in absolute
+    // position. The structure must be placed above yMin and at or below yMax.
     int yMin = int.MinValue;
     int yMax = int.MaxValue;
     // This is the sum of the y heights at each probe location.
     int yTerrainSum = 0;
-    Vec2i pos = new();
     bool incomplete = false;
     int y;
     foreach (TerrainProbe probe in Probes) {
@@ -236,8 +238,8 @@ public class OffsetBlockSchematic : BlockSchematic {
         continue;
       }
       yTerrainSum += y;
-      yMin = int.Max(yMin, probe.YMin + y);
-      yMax = int.Min(yMax, probe.YMax + y);
+      yMax = int.Min(yMax, y - probe.YMin);
+      yMin = int.Max(yMin, y - probe.YEnd);
       if (yMin >= yMax) {
         // The probe failed.
         return -2;
@@ -250,8 +252,8 @@ public class OffsetBlockSchematic : BlockSchematic {
     // surface block y coordinate.
     y = yTerrainSum / Probes.Length + 1;
     // Adjust the position so that it is within the allowed range.
-    y = int.Max(y, yMin);
-    y = int.Min(y, yMax - 1);
+    y = int.Max(y, yMin + 1);
+    y = int.Min(y, yMax);
     return y;
   }
 

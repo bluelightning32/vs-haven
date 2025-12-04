@@ -166,7 +166,7 @@ public class OffsetBlockSchematic {
         X = x,
         Z = z,
         YMin = -1,
-        YMax = 1,
+        YEnd = 1,
       });
     }
     CollectionAssert.AreEquivalent(expected, box.Probes);
@@ -177,7 +177,7 @@ public class OffsetBlockSchematic {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, -1);
     box.AutoConfigureProbes();
     CollectionAssert.AreEquivalent(
-        new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -2, YMax = 0 } },
+        new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -2, YEnd = 0 } },
         box.Probes);
   }
 
@@ -186,7 +186,7 @@ public class OffsetBlockSchematic {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 3, 1, -2);
     box.AutoConfigureProbes();
     CollectionAssert.AreEquivalent(
-        new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -3, YMax = 1 } },
+        new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -3, YEnd = 1 } },
         box.Probes);
   }
 
@@ -195,7 +195,7 @@ public class OffsetBlockSchematic {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 2);
     box.AutoConfigureProbes();
     CollectionAssert.AreEquivalent(
-        new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -1, YMax = 0 } },
+        new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -1, YEnd = 0 } },
         box.Probes);
   }
 
@@ -204,7 +204,7 @@ public class OffsetBlockSchematic {
     Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, 0);
     top.AutoConfigureProbes();
     CollectionAssert.AreEquivalent(
-        new TerrainProbe[] { new() { X = 1, Z = 1, YMin = -1, YMax = 2 } },
+        new TerrainProbe[] { new() { X = 1, Z = 1, YMin = -1, YEnd = 2 } },
         top.Probes);
   }
 
@@ -224,7 +224,7 @@ public class OffsetBlockSchematic {
         X = x,
         Z = z,
         YMin = -2,
-        YMax = 1,
+        YEnd = 1,
       });
     }
     CollectionAssert.AreEquivalent(expected, top.Probes);
@@ -252,13 +252,13 @@ public class OffsetBlockSchematic {
         X = 0,
         Z = 0,
         YMin = -100,
-        YMax = 100,
+        YEnd = 100,
       },
       new() {
         X = 1,
         Z = 0,
         YMin = -100,
-        YMax = 100,
+        YEnd = 100,
       }
     ];
 
@@ -280,13 +280,13 @@ public class OffsetBlockSchematic {
         X = 0,
         Z = 0,
         YMin = -100,
-        YMax = 100,
+        YEnd = 100,
       },
       new() {
         X = 1,
         Z = 0,
         YMin = 0,
-        YMax = 1,
+        YEnd = 1,
       }
     ];
 
@@ -307,13 +307,13 @@ public class OffsetBlockSchematic {
         X = 0,
         Z = 0,
         YMin = -100,
-        YMax = 100,
+        YEnd = 100,
       },
       new() {
         X = 1,
         Z = 0,
         YMin = 0,
-        YMax = 1,
+        YEnd = 1,
       }
     ];
 
@@ -334,13 +334,13 @@ public class OffsetBlockSchematic {
         X = 0,
         Z = 0,
         YMin = 0,
-        YMax = 1,
+        YEnd = 1,
       },
       new() {
         X = 1,
         Z = 1,
         YMin = 0,
-        YMax = 1,
+        YEnd = 1,
       }
     ];
 
@@ -351,6 +351,21 @@ public class OffsetBlockSchematic {
     // This probe cannot pass along with the prior one.
     reader.SetHeight(1, 1, 3);
     Assert.AreEqual(-2, box.ProbeTerrain(survey, null, new(0, 0)));
+  }
+
+  [TestMethod]
+  public void ProbeTerrainSlabSitsOnTop() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(2, 1, 2, 0);
+    box.AutoConfigureProbes();
+    Assert.AreEqual(-1, box.Probes[0].YMin);
+    Assert.AreEqual(1, box.Probes[0].YEnd);
+
+    MemoryTerrainHeightReader reader = new();
+    reader.FillChunk(0, 0, 100, 0, 0);
+    Real.TerrainSurvey survey = new(reader);
+    // The surface block is at y=100. The granite box should be placed on top of
+    // it at y=101.
+    Assert.AreEqual(101, box.ProbeTerrain(survey, null, new(0, 0)));
   }
 
   [TestMethod]
