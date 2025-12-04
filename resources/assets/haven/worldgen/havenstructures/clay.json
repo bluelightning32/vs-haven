@@ -3,6 +3,7 @@
   schematics: {
     "blue": {
       schematic: "blueclay",
+      offsetY: -1,
     },
   },
   count: {
