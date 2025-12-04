@@ -104,6 +104,20 @@ public class TerrainSurvey {
     _reader = reader;
   }
 
+  private TerrainStats GetStatsForRowOfCircle(IBlockAccessor accessor,
+                                              Vec2i center, int radius,
+                                              int chunkY, int yThickest,
+                                              ref int chunkCount,
+                                              ref bool incomplete) {
+    int yoffset = yThickest - center.Y;
+    int xoffset = (int)Math.Sqrt(radius * radius - yoffset * yoffset);
+    int chunkXBegin = BlockStartToChunk(center.X - xoffset);
+    int chunkXEnd = BlockEndToChunk(center.X + xoffset);
+    chunkCount += chunkXEnd - chunkXBegin;
+    return GetColumnRowStats(accessor, chunkXBegin, chunkXEnd, chunkY,
+                             ref incomplete);
+  }
+
   /// <summary>
   /// Gets the stats for all chunks that intersect the given circle. If a chunk
   /// intersects the circle at all, then the stats for the whole chunk are
@@ -129,39 +143,26 @@ public class TerrainSurvey {
     // location.
     y += GlobalConstants.ChunkSize - y % GlobalConstants.ChunkSize;
     // Process the northern half of the circle.
-    int chunkXBegin, chunkXEnd;
     for (; y <= center.Y; y += GlobalConstants.ChunkSize) {
       // y points to one chunk south of what needs to be added in this
-      // iteration. Here, each row is thicker on the southern side of the chunk,
-      // so do the x calculation there.
-      int yoffset = y - center.Y;
-      int xoffset = (int)Math.Sqrt(radius * radius - yoffset * yoffset);
-      chunkXBegin = BlockStartToChunk(center.X - xoffset);
-      chunkXEnd = BlockEndToChunk(center.X + xoffset);
-      chunkCount += chunkXEnd - chunkXBegin;
-      results.Add(GetColumnRowStats(accessor, chunkXBegin, chunkXEnd,
-                                    BlockStartToChunk(y) - 1, ref incomplete));
+      // iteration. Here, each row is thicker on the southern side of the chunk.
+      results.Add(GetStatsForRowOfCircle(accessor, center, radius,
+                                         BlockStartToChunk(y) - 1, y,
+                                         ref chunkCount, ref incomplete));
     }
 
     // Process the center of the circle.
-    chunkXBegin = BlockStartToChunk(center.X - radius);
-    chunkXEnd = BlockEndToChunk(center.X + radius);
-    chunkCount += chunkXEnd - chunkXBegin;
-    results.Add(GetColumnRowStats(accessor, chunkXBegin, chunkXEnd,
-                                  BlockStartToChunk(center.Y), ref incomplete));
+    results.Add(GetStatsForRowOfCircle(accessor, center, radius,
+                                       BlockStartToChunk(center.Y), center.Y,
+                                       ref chunkCount, ref incomplete));
 
     // Process the southern half of the circle.
     for (; y < center.Y + radius; y += GlobalConstants.ChunkSize) {
       // y points to the northmost block of the chunk row to be added in this
-      // iteration. Here, each row is thicker on the northern side of the chunk,
-      // so do the x calculation there.
-      int yoffset = y - center.Y;
-      int xoffset = (int)Math.Sqrt(radius * radius - yoffset * yoffset);
-      chunkXBegin = BlockStartToChunk(center.X - xoffset);
-      chunkXEnd = BlockEndToChunk(center.X + xoffset);
-      chunkCount += chunkXEnd - chunkXBegin;
-      results.Add(GetColumnRowStats(accessor, chunkXBegin, chunkXEnd,
-                                    BlockStartToChunk(y), ref incomplete));
+      // iteration. Here, each row is thicker on the northern side of the chunk.
+      results.Add(GetStatsForRowOfCircle(accessor, center, radius,
+                                         BlockStartToChunk(y), y,
+                                         ref chunkCount, ref incomplete));
     }
     return results;
   }
