@@ -11,9 +11,9 @@ public class ResourceZoneConfig {
   [JsonProperty]
   public double MinRadius = 10.0;
   [JsonProperty]
-  public double MaxRoughnessPerimeter = 3;
+  public double MaxRoughnessPerimeter = 2;
   [JsonProperty]
-  public double MaxRoughnessArea = 0.75;
+  public double MaxRoughnessArea = 0.5;
   [JsonProperty]
   public double MinLandRatio = 0.9;
 

@@ -60,18 +60,16 @@ public class FlatCircleLocator : IWorldGenerator {
   [ProtoMember(4)]
   private readonly int _maxRoughness;
   /// <summary>
-  /// Reject locations that have fewer blocks solid blocks at the surface level
+  /// Reject locations that have a lower solid block at the surface level ratio
   /// than this
   /// </summary>
   [ProtoMember(5)]
-  private readonly int _minSolid;
+  private readonly double _minSolid;
 
   [ProtoMember(6)]
   private bool _done = false;
   [ProtoMember(7)]
   private int _y = 0;
-
-  private int _circleArea;
 
   private ILogger _logger;
   private TerrainSurvey _terrain;
@@ -101,10 +99,10 @@ public class FlatCircleLocator : IWorldGenerator {
     _start = start.Copy();
     _radius = radius;
     double perimeter = Math.Tau * radius;
-    _circleArea = (int)(Math.PI * radius * radius);
+    int estimatedCircleArea = (int)(Math.PI * radius * radius);
     _maxRoughness = (int)(maxRoughnessPerimeter * perimeter +
-                          maxRoughnessArea * _circleArea);
-    _minSolid = (int)(minSolid * _circleArea);
+                          maxRoughnessArea * estimatedCircleArea);
+    _minSolid = minSolid;
   }
 
   /// <summary>
@@ -120,7 +118,6 @@ public class FlatCircleLocator : IWorldGenerator {
   public void Restore(ILogger logger, TerrainSurvey terrain) {
     _logger = logger;
     _terrain = terrain;
-    _circleArea = (int)(Math.PI * _radius * _radius);
   }
 
   public Vec2i Center2D {
@@ -162,26 +159,24 @@ public class FlatCircleLocator : IWorldGenerator {
   private bool IsGoodLocation(IBlockAccessor accessor, out bool incomplete) {
     Vec2i center = Center2D;
     incomplete = false;
-    TerrainStats stats = _terrain.GetRoughCircleStats(
-        accessor, center, _radius, out int chunkCount, ref incomplete);
-    int surveyedArea =
-        chunkCount * GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
+    TerrainStats stats = _terrain.GetCircleStats(accessor, center, _radius,
+                                                 out int area, ref incomplete);
     // The roughness check may exclude the location even before all of the
     // chunks are surveyed.
-    if (stats.Roughness * _circleArea / surveyedArea > _maxRoughness) {
+    if (stats.Roughness > _maxRoughness) {
       return false;
     }
     if (incomplete) {
       return false;
     }
-    if (stats.SolidCount * _circleArea / surveyedArea < _minSolid) {
+    if (stats.SolidCount < _minSolid * area) {
       return false;
     }
-    _y = stats.SumHeight / surveyedArea;
+    _y = stats.SumHeight / area;
     _logger.Build(
         $"Located flat circle at ({Center}) with radius {_radius} and " +
-        $"roughness {stats.Roughness / (double)surveyedArea} and " +
-        $"{stats.SolidCount / (double)surveyedArea} solid ratio.");
+        $"roughness {stats.Roughness / (double)area} and " +
+        $"{stats.SolidCount / (double)area} solid ratio.");
     return true;
   }
 
