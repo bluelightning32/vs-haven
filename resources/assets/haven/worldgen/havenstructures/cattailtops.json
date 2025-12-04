@@ -3,7 +3,7 @@
   schematics: {
     "coopersreed": {
       schematic: "coopersreed",
-      offsetY: -1,
+      offsetY: -2,
     },
   },
   count: {
