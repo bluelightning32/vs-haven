@@ -39,13 +39,13 @@ public class MemoryTerrainHeightReader : ITerrainHeightReader {
   }
 
   public void FillChunk(int chunkX, int chunkZ, int intercept, double xslope,
-                        double zslope) {
-    (ushort[] heights, bool[] solid) = GetOrCreateChunkData(chunkX, chunkZ);
+                        double zslope, bool solid = true) {
+    (ushort[] heights, bool[] solids) = GetOrCreateChunkData(chunkX, chunkZ);
     for (int z = 0; z < GlobalConstants.ChunkSize; ++z) {
       for (int x = 0; x < GlobalConstants.ChunkSize; ++x) {
         heights[x + z * GlobalConstants.ChunkSize] =
             (ushort)(intercept + x * xslope + z * zslope);
-        solid[x + z * GlobalConstants.ChunkSize] = true;
+        solids[x + z * GlobalConstants.ChunkSize] = solid;
       }
     }
   }

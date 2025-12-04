@@ -29,12 +29,12 @@ public class FlatCircleLocator {
 
     Assert.IsTrue(locator.Generate(null));
     Assert.IsFalse(locator.Failed);
-    Assert.AreEqual(new(center, center), locator.Center);
+    Assert.AreEqual(new(center, 200, center), locator.Center);
 
     // Calling Generate an extra time should not change the result.
     Assert.IsTrue(locator.Generate(null));
     Assert.IsFalse(locator.Failed);
-    Assert.AreEqual(new(center, center), locator.Center);
+    Assert.AreEqual(new(center, 200, center), locator.Center);
   }
 
   [TestMethod]
@@ -42,12 +42,13 @@ public class FlatCircleLocator {
     MemoryTerrainHeightReader reader = new();
     Real.TerrainSurvey survey = new(reader);
 
-    int center = (int)(GlobalConstants.ChunkSize * 1.5);
+    int center = (int)(GlobalConstants.ChunkSize * 2.5);
     Real.FlatCircleLocator locator = new(
         survey, new(center, center), GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
 
-    // Set the initial location to height 1 so that it is not counted as land.
-    reader.FillChunk(2, 2, 1, 0, 0);
+    // Make the initial chunk not count as land so that the locator has to
+    // search other locations.
+    reader.FillChunk(2, 2, 200, 0, 0, false);
 
     // The first attempt only has access to the chunk which fails. So the first
     // attempt will be incomplete.
@@ -57,7 +58,7 @@ public class FlatCircleLocator {
     for (int x = 0; x < 5; ++x) {
       for (int z = 0; z < 5; ++z) {
         if (x != 2 || z != 2) {
-          reader.FillChunk(x, z, 200, 0, 0);
+          reader.FillChunk(x, z, 200, 0, 0, true);
         }
       }
     }
@@ -65,9 +66,10 @@ public class FlatCircleLocator {
     Assert.IsTrue(locator.Generate(null));
     Assert.IsFalse(locator.Failed);
 
-    Vec2i found = locator.Center;
-    Assert.IsLessThan(GlobalConstants.ChunkSize,
-                      found.ManhattenDistance(center, center));
+    Assert.AreNotEqual(new Vec2i(center, center), locator.Center2D);
+    Assert.IsLessThan(1.5 * GlobalConstants.ChunkSize,
+                      locator.Center2D.ManhattenDistance(center, center));
+    BlockPos found = locator.Center;
 
     // Calling Generate an extra time should not change the result.
     Assert.IsTrue(locator.Generate(null));
@@ -80,7 +82,7 @@ public class FlatCircleLocator {
     MemoryTerrainHeightReader reader = new();
     Real.TerrainSurvey survey = new(reader);
 
-    int center = (int)(GlobalConstants.ChunkSize * 1.5);
+    int center = (int)(GlobalConstants.ChunkSize * 2.5);
     Real.FlatCircleLocator locator = new(
         survey, new(center, center), GlobalConstants.ChunkSize / 2, 0, 0, 0);
 
@@ -103,9 +105,10 @@ public class FlatCircleLocator {
     Assert.IsTrue(locator.Generate(null));
     Assert.IsFalse(locator.Failed);
 
-    Vec2i found = locator.Center;
-    Assert.IsLessThan(GlobalConstants.ChunkSize,
-                      found.ManhattenDistance(center, center));
+    Assert.AreNotEqual(new Vec2i(center, center), locator.Center2D);
+    Assert.IsLessThan(3 * GlobalConstants.ChunkSize,
+                      locator.Center2D.ManhattenDistance(center, center));
+    BlockPos found = locator.Center;
 
     // Calling Generate an extra time should not change the result.
     Assert.IsTrue(locator.Generate(null));
@@ -132,17 +135,17 @@ public class FlatCircleLocator {
 
     Assert.IsTrue(locator.Generate(null));
     Assert.IsFalse(locator.Failed);
-    Assert.AreEqual(new(center, center), locator.Center);
+    Assert.AreEqual(new(center, 200, center), locator.Center);
 
     // Calling Generate an extra time should not change the result.
     Assert.IsTrue(locator.Generate(null));
     Assert.IsFalse(locator.Failed);
-    Assert.AreEqual(new(center, center), locator.Center);
+    Assert.AreEqual(new(center, 200, center), locator.Center);
 
     byte[] data = SerializerUtil.Serialize(locator);
     Real.FlatCircleLocator copy =
         SerializerUtil.Deserialize<Real.FlatCircleLocator>(data);
     copy.Restore(survey);
-    Assert.AreEqual(new(center, center), locator.Center);
+    Assert.AreEqual(new(center, 200, center), locator.Center);
   }
 }

@@ -60,13 +60,16 @@ public class FlatCircleLocator : IWorldGenerator {
   [ProtoMember(4)]
   private readonly int _maxRoughness;
   /// <summary>
-  /// Reject locations that have fewer blocks above seaLevel than this
+  /// Reject locations that have fewer blocks solid blocks at the surface level
+  /// than this
   /// </summary>
   [ProtoMember(5)]
-  private readonly int _minAboveSea;
+  private readonly int _minSolid;
 
   [ProtoMember(6)]
   private bool _done = false;
+  [ProtoMember(7)]
+  private int _y = 0;
 
   private int _circleArea;
 
@@ -88,10 +91,10 @@ public class FlatCircleLocator : IWorldGenerator {
   /// <param name="maxRoughnessArea">
   /// the roughness allowed per block of the center
   /// </param>
-  /// <param name="minAboveSea">minimum land (as opposed to water) ratio</param>
+  /// <param name="minSolid">minimum land (as opposed to water) ratio</param>
   public FlatCircleLocator(TerrainSurvey terrain, Vec2i start, int radius,
                            double maxRoughnessPerimeter,
-                           double maxRoughnessArea, double minAboveSea) {
+                           double maxRoughnessArea, double minSolid) {
     _terrain = terrain;
     _start = start.Copy();
     _radius = radius;
@@ -99,7 +102,7 @@ public class FlatCircleLocator : IWorldGenerator {
     _circleArea = (int)(Math.PI * radius * radius);
     _maxRoughness = (int)(maxRoughnessPerimeter * perimeter +
                           maxRoughnessArea * _circleArea);
-    _minAboveSea = (int)(minAboveSea * _circleArea);
+    _minSolid = (int)(minSolid * _circleArea);
   }
 
   /// <summary>
@@ -117,8 +120,15 @@ public class FlatCircleLocator : IWorldGenerator {
     _circleArea = (int)(Math.PI * _radius * _radius);
   }
 
-  public Vec2i Center {
+  public Vec2i Center2D {
     get { return _start + _searchOffset.SquareOffset * (_radius / 4); }
+  }
+
+  public BlockPos Center {
+    get {
+      Vec2i center = Center2D;
+      return new BlockPos(center.X, _y, center.Y, Dimensions.NormalWorld);
+    }
   }
 
   public bool Done {
@@ -147,7 +157,7 @@ public class FlatCircleLocator : IWorldGenerator {
   }
 
   private bool IsGoodLocation(IBlockAccessor accessor, out bool incomplete) {
-    Vec2i center = Center;
+    Vec2i center = Center2D;
     incomplete = false;
     TerrainStats stats = _terrain.GetRoughCircleStats(
         accessor, center, _radius, out int chunkCount, ref incomplete);
@@ -161,9 +171,10 @@ public class FlatCircleLocator : IWorldGenerator {
     if (incomplete) {
       return false;
     }
-    if (stats.SolidCount * _circleArea / surveyedArea < _minAboveSea) {
+    if (stats.SolidCount * _circleArea / surveyedArea < _minSolid) {
       return false;
     }
+    _y = stats.SumHeight / surveyedArea;
     return true;
   }
 
