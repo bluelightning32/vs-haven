@@ -104,11 +104,12 @@ public class TerrainSurvey {
     _reader = reader;
   }
 
-  private TerrainStats GetStatsForRowOfDisk(IBlockAccessor accessor,
-                                            Vec2i center, int radiusSq,
-                                            int chunkZ, int zThickest,
-                                            int zThinnest, ref int area,
-                                            ref bool incomplete) {
+  private void
+  TraverseDiskRow(IBlockAccessor accessor, Vec2i center, int radiusSq,
+                  int chunkZ, int zThickest, int zThinnest,
+                  Action<int, int, ChunkColumnSurvey> traverseFullChunk,
+                  Action<int, int, ChunkColumnSurvey> traversePartialChunk,
+                  ref bool incomplete) {
     // Calculate the x coordinates for the part of the row that intersects the
     // disk.
     int zPartialOffset = zThickest - center.Y;
@@ -122,81 +123,71 @@ public class TerrainSurvey {
     int xFullOffsetSq = radiusSq - zFullOffset * zFullOffset;
     if (xFullOffsetSq < GlobalConstants.ChunkSize * GlobalConstants.ChunkSize) {
       // No part of the row is fully covered by the disk.
-      return GetStatsForDiskPartialCover(accessor, center, radiusSq,
-                                         chunkXPartialBegin, chunkXPartialEnd,
-                                         chunkZ, ref area, ref incomplete);
+      TraverseRow(accessor, chunkXPartialBegin, chunkXPartialEnd, chunkZ,
+                  traversePartialChunk, ref incomplete);
+      return;
     }
     int xFullOffset = (int)Math.Sqrt(xFullOffsetSq);
     int chunkXFullBegin = BlockEndToChunk(center.X - xFullOffset);
     int chunkXFullEnd = BlockStartToChunk(center.X + xFullOffset);
-    TerrainStats results = GetStatsForDiskPartialCover(
-        accessor, center, radiusSq, chunkXPartialBegin, chunkXFullBegin, chunkZ,
-        ref area, ref incomplete);
-    area += (chunkXFullEnd - chunkXFullBegin) * GlobalConstants.ChunkSize *
-            GlobalConstants.ChunkSize;
-    results.Add(GetColumnRowStats(accessor, chunkXFullBegin, chunkXFullEnd,
-                                  chunkZ, ref incomplete));
-    results.Add(GetStatsForDiskPartialCover(accessor, center, radiusSq,
-                                            chunkXFullEnd, chunkXPartialEnd,
-                                            chunkZ, ref area, ref incomplete));
-    return results;
+    TraverseRow(accessor, chunkXPartialBegin, chunkXFullBegin, chunkZ,
+                traversePartialChunk, ref incomplete);
+    TraverseRow(accessor, chunkXFullBegin, chunkXFullEnd, chunkZ,
+                traverseFullChunk, ref incomplete);
+    TraverseRow(accessor, chunkXFullEnd, chunkXPartialEnd, chunkZ,
+                traversePartialChunk, ref incomplete);
   }
 
-  private TerrainStats
-  GetStatsForDiskPartialCover(IBlockAccessor accessor, Vec2i center,
-                              int radiusSq, int chunkXBegin, int chunkXEnd,
-                              int chunkZ, ref int area, ref bool incomplete) {
-    TerrainStats results = new();
+  private void TraverseRow(IBlockAccessor accessor, int chunkXBegin,
+                           int chunkXEnd, int chunkZ,
+                           Action<int, int, ChunkColumnSurvey> traverseChunk,
+                           ref bool incomplete) {
     for (int chunkX = chunkXBegin; chunkX < chunkXEnd; ++chunkX) {
       ChunkColumnSurvey chunk = GetColumn(accessor, new Vec2i(chunkX, chunkZ));
       if (chunk == null) {
         incomplete = true;
         continue;
       }
-      int offset = 0;
-      for (int z = 0; z < GlobalConstants.ChunkSize; ++z) {
-        int zOffset = chunkZ * GlobalConstants.ChunkSize + z - center.Y;
-        int zOffsetSq = zOffset * zOffset;
-        for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
-          int xOffset = chunkX * GlobalConstants.ChunkSize + x - center.X;
-          if (zOffsetSq + xOffset * xOffset <= radiusSq) {
-            int height = chunk.Heights[offset];
-            int northHeight;
-            if (z == 0) {
-              northHeight =
-                  GetHeight(accessor, chunkX * GlobalConstants.ChunkSize + x,
-                            chunkZ * GlobalConstants.ChunkSize + z - 1);
-              if (northHeight == -1) {
-                incomplete = true;
-                northHeight = height;
-              }
-            } else {
-              northHeight = chunk.Heights[offset - GlobalConstants.ChunkSize];
-            }
-            results.Roughness += Math.Abs(northHeight - height);
-            int westHeight;
-            if (x == 0) {
-              westHeight = GetHeight(accessor,
-                                     chunkX * GlobalConstants.ChunkSize + x - 1,
-                                     chunkZ * GlobalConstants.ChunkSize + z);
-              if (westHeight == -1) {
-                incomplete = true;
-                westHeight = height;
-              }
-            } else {
-              westHeight = chunk.Heights[offset - 1];
-            }
-            results.Roughness += Math.Abs(westHeight - height);
-            if (chunk.Solid[offset]) {
-              ++results.SolidCount;
-            }
-            results.SumHeight += height;
-            ++area;
-          }
-        }
-      }
+      traverseChunk(chunkX, chunkZ, chunk);
     }
-    return results;
+  }
+
+  public void
+  TraverseDisk(IBlockAccessor accessor, Vec2i center, int radius,
+               Action<int, int, ChunkColumnSurvey> traverseFullChunk,
+               Action<int, int, ChunkColumnSurvey> traversePartialChunk,
+               ref bool incomplete) {
+    int radiusSq = radius * radius;
+    int y = center.Y - radius;
+    // Move y to the north end of the following chunk so that it is in a known
+    // location.
+    y += GlobalConstants.ChunkSize - y % GlobalConstants.ChunkSize;
+    // Process the northern half of the disk.
+    for (; y <= center.Y; y += GlobalConstants.ChunkSize) {
+      // y points to one chunk south of what needs to be added in this
+      // iteration. Here, each row is thicker on the southern side of the chunk.
+      TraverseDiskRow(accessor, center, radiusSq, BlockStartToChunk(y) - 1, y,
+                      y - GlobalConstants.ChunkSize, traverseFullChunk,
+                      traversePartialChunk, ref incomplete);
+    }
+
+    // Process the center of the disk. y points to the row to the south of the
+    // center row.
+    int yThinnest = center.Y > y - GlobalConstants.ChunkSize / 2
+                        ? y - GlobalConstants.ChunkSize
+                        : y;
+    TraverseDiskRow(accessor, center, radiusSq, BlockStartToChunk(center.Y),
+                    center.Y, yThinnest, traverseFullChunk,
+                    traversePartialChunk, ref incomplete);
+
+    // Process the southern half of the disk.
+    for (; y <= center.Y + radius; y += GlobalConstants.ChunkSize) {
+      // y points to the northmost block of the chunk row to be added in this
+      // iteration. Here, each row is thicker on the northern side of the chunk.
+      TraverseDiskRow(accessor, center, radiusSq, BlockStartToChunk(y), y,
+                      y + GlobalConstants.ChunkSize, traverseFullChunk,
+                      traversePartialChunk, ref incomplete);
+    }
   }
 
   /// <summary>
@@ -216,39 +207,65 @@ public class TerrainSurvey {
   public TerrainStats GetDiskStats(IBlockAccessor accessor, Vec2i center,
                                    int radius, out int area,
                                    ref bool incomplete) {
-    area = 0;
-    int radiusSq = radius * radius;
+    int localArea = 0;
+    bool localIncomplete = false;
     TerrainStats results = new();
-    int y = center.Y - radius;
-    // Move y to the north end of the following chunk so that it is in a known
-    // location.
-    y += GlobalConstants.ChunkSize - y % GlobalConstants.ChunkSize;
-    // Process the northern half of the disk.
-    for (; y <= center.Y; y += GlobalConstants.ChunkSize) {
-      // y points to one chunk south of what needs to be added in this
-      // iteration. Here, each row is thicker on the southern side of the chunk.
-      results.Add(GetStatsForRowOfDisk(
-          accessor, center, radiusSq, BlockStartToChunk(y) - 1, y,
-          y - GlobalConstants.ChunkSize, ref area, ref incomplete));
+    int radiusSq = radius * radius;
+    void TraverseFullChunk(int chunkX, int chunkZ, ChunkColumnSurvey chunk) {
+      localArea += GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
+      results.Add(chunk.Stats);
+      if (chunk.Stats.Roughness == -1) {
+        localIncomplete = true;
+      }
     }
-
-    // Process the center of the disk. y points to the row to the south of the
-    // center row.
-    int yThinnest = center.Y > y - GlobalConstants.ChunkSize / 2
-                        ? y - GlobalConstants.ChunkSize
-                        : y;
-    results.Add(GetStatsForRowOfDisk(accessor, center, radiusSq,
-                                     BlockStartToChunk(center.Y), center.Y,
-                                     yThinnest, ref area, ref incomplete));
-
-    // Process the southern half of the disk.
-    for (; y <= center.Y + radius; y += GlobalConstants.ChunkSize) {
-      // y points to the northmost block of the chunk row to be added in this
-      // iteration. Here, each row is thicker on the northern side of the chunk.
-      results.Add(GetStatsForRowOfDisk(
-          accessor, center, radiusSq, BlockStartToChunk(y), y,
-          y + GlobalConstants.ChunkSize, ref area, ref incomplete));
+    void TraversePartialChunk(int chunkX, int chunkZ, ChunkColumnSurvey chunk) {
+      int offset = 0;
+      for (int z = 0; z < GlobalConstants.ChunkSize; ++z) {
+        int zOffset = chunkZ * GlobalConstants.ChunkSize + z - center.Y;
+        int zOffsetSq = zOffset * zOffset;
+        for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
+          int xOffset = chunkX * GlobalConstants.ChunkSize + x - center.X;
+          if (zOffsetSq + xOffset * xOffset <= radiusSq) {
+            int height = chunk.Heights[offset];
+            int northHeight;
+            if (z == 0) {
+              northHeight =
+                  GetHeight(accessor, chunkX * GlobalConstants.ChunkSize + x,
+                            chunkZ * GlobalConstants.ChunkSize + z - 1);
+              if (northHeight == -1) {
+                localIncomplete = true;
+                northHeight = height;
+              }
+            } else {
+              northHeight = chunk.Heights[offset - GlobalConstants.ChunkSize];
+            }
+            results.Roughness += Math.Abs(northHeight - height);
+            int westHeight;
+            if (x == 0) {
+              westHeight = GetHeight(accessor,
+                                     chunkX * GlobalConstants.ChunkSize + x - 1,
+                                     chunkZ * GlobalConstants.ChunkSize + z);
+              if (westHeight == -1) {
+                localIncomplete = true;
+                westHeight = height;
+              }
+            } else {
+              westHeight = chunk.Heights[offset - 1];
+            }
+            results.Roughness += Math.Abs(westHeight - height);
+            if (chunk.Solid[offset]) {
+              ++results.SolidCount;
+            }
+            results.SumHeight += height;
+            ++localArea;
+          }
+        }
+      }
     }
+    TraverseDisk(accessor, center, radius, TraverseFullChunk,
+                 TraversePartialChunk, ref incomplete);
+    incomplete |= localIncomplete;
+    area = localArea;
     return results;
   }
 
@@ -258,39 +275,5 @@ public class TerrainSurvey {
 
   private static int BlockEndToChunk(int pos) {
     return BlockStartToChunk(pos + GlobalConstants.ChunkSize);
-  }
-
-  /// <summary>
-  /// Sum the stats for a range of columns adjacent in the east-west direction.
-  /// </summary>
-  /// <param name="accessor"></param>
-  /// <param name="chunkXBegin">
-  /// the X coordinate for the first chunk to include
-  /// </param>
-  /// <param name="chunkXEnd">
-  /// the X coordinate for one after the last chunk to include
-  /// </param>
-  /// <param name="chunkZ">the Z coordinate for all chunks in the row
-  /// </param>
-  /// <param name="incomplete">
-  /// set to true if one or more of the requested chunks was unavailable
-  /// </param>
-  /// <returns>the stats for all covered chunks</returns>
-  public TerrainStats GetColumnRowStats(IBlockAccessor accessor,
-                                        int chunkXBegin, int chunkXEnd,
-                                        int chunkZ, ref bool incomplete) {
-    TerrainStats results = new();
-    for (int x = chunkXBegin; x < chunkXEnd; ++x) {
-      ChunkColumnSurvey chunk = GetColumn(accessor, new Vec2i(x, chunkZ));
-      if (chunk != null) {
-        results.Add(chunk.Stats);
-        if (chunk.Stats.Roughness == -1) {
-          incomplete = true;
-        }
-      } else {
-        incomplete = true;
-      }
-    }
-    return results;
   }
 }
