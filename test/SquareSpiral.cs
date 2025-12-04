@@ -35,7 +35,36 @@ public class SquareSpiral {
       found.Add(spiral.Offset);
       spiral.Next();
     }
-    Assert.AreEqual(25, found.Count);
+    Assert.HasCount(25, found);
+  }
+
+  [TestMethod]
+  public void SquareOffsetFirst9() {
+    Real.SquareSpiral spiral = new();
+    List<Vec2i> first = [];
+    for (int i = 0; i < 9; ++i) {
+      first.Add(spiral.SquareOffset);
+      spiral.Next();
+    }
+    CollectionAssert.AreEqual(
+        new Vec2i[] { new(0, 0), new(1, 0), new(1, 1), new(0, 1), new(-1, 1),
+                      new(-1, 0), new(-1, -1), new(0, -1), new(1, -1) },
+        first);
+  }
+
+  [TestMethod]
+  public void SquareOffsetFirst25() {
+    Real.SquareSpiral spiral = new();
+    HashSet<Vec2i> found = [];
+    for (int i = 0; i < 25; ++i) {
+      Assert.IsLessThan(5, spiral.SquareOffset.X);
+      Assert.IsGreaterThan(-5, spiral.SquareOffset.X);
+      Assert.IsLessThan(5, spiral.SquareOffset.Y);
+      Assert.IsGreaterThan(-5, spiral.SquareOffset.Y);
+      found.Add(spiral.SquareOffset);
+      spiral.Next();
+    }
+    Assert.HasCount(25, found);
   }
 
   [TestMethod]

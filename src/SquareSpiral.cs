@@ -89,11 +89,27 @@ public class SquareSpiral {
     }
   }
 
+  /// <summary>
+  /// Return a vector that points in the same direction as Offset, but has its
+  /// Chebyshev distance squared.
+  /// <code>
+  /// 15  x 14  x 13  x 12  x  11
+  ///  x  x  x  x  x  x  x  x  x
+  /// 16  x  x  x  x  x  x  x  10
+  ///  x  x  x  4  3  2  x  x  x
+  /// 17  x  x  5  0  1  x  x  9
+  ///  x  x  x  6  7  8  x  x  x
+  /// 18  x  x  x  x  x  x  x  23
+  ///  x  x  x  x  x  x  x  x  x
+  /// 19  x 20  x 21  x 22  x  23
+  /// </code>
+  /// </summary>
   public Vec2i SquareOffset {
     get {
       Vec2i offset = Offset;
-      offset.X *= offset.X;
-      offset.Y *= offset.Y;
+      int round = Round;
+      offset.X *= round;
+      offset.Y *= round;
       return offset;
     }
   }
