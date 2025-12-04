@@ -76,7 +76,10 @@ public class SchematicPlacer : IWorldGenerator {
   private SchematicPlacer() {}
 
   private bool FinalizeLocation(IBlockAccessor accessor) {
-    while (_locationSearch != null) {
+    if (_locationSearch == null) {
+      return true;
+    }
+    while (true) {
       Vec2i testPos = _locationSearch.SquareOffset;
       testPos.X += Offset.X;
       testPos.Y += Offset.Z;
@@ -90,12 +93,11 @@ public class SchematicPlacer : IWorldGenerator {
         if (_supervisor.TryFinalizeLocation(this, updatedOffset)) {
           Offset = updatedOffset;
           _locationSearch = null;
+          return true;
         }
-      } else {
-        _locationSearch.Next();
       }
+      _locationSearch.Next();
     }
-    return true;
   }
 
   /// <summary>

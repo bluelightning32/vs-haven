@@ -134,6 +134,39 @@ public class SchematicPlacer {
   }
 
   [TestMethod]
+  public void TryFinalizeLocationFailure() {
+    MockSchematicPlacerSupervisor supervisor = new();
+    int FinalizeLocationCalls = 0;
+    Real.SchematicPlacer placer = null;
+    BlockPos pos =
+        new(3 * GlobalConstants.ChunkSize, 101, 3 * GlobalConstants.ChunkSize);
+    bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
+      Assert.IsLessThan(2, FinalizeLocationCalls);
+      ++FinalizeLocationCalls;
+      Assert.AreEqual(placer, placer2);
+      if (FinalizeLocationCalls == 2) {
+        Assert.AreNotEqual(pos, pos2);
+        Assert.IsLessThan(GlobalConstants.ChunkSize * 2,
+                          pos2.ManhattenDistance(pos));
+        return true;
+      }
+      return false;
+    }
+    supervisor.TryFinalizeLocationMock = FinalizeLocation;
+    placer = CreateGraniteBox(1, 1, 1, 0, pos, supervisor);
+
+    // Mark the chunk as loaded.
+    Framework.Api.WorldManager.LoadChunkColumnPriority(3, 3);
+    Framework.Server.LoadChunksInline();
+    supervisor.FakeTerrain.FillChunk(3, 3, 100, 0, 0);
+    IBulkBlockAccessor accessor =
+        Framework.Server.GetBlockAccessorBulkUpdate(false, false);
+
+    Assert.IsTrue(placer.Generate(accessor));
+    Assert.AreEqual(2, FinalizeLocationCalls);
+  }
+
+  [TestMethod]
   public void SerializationRemembersPlacedBlocks() {
     MockSchematicPlacerSupervisor supervisor = new();
     Real.SchematicPlacer placer =
