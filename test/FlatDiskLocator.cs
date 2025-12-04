@@ -9,14 +9,14 @@ using Real = Haven;
 namespace Haven.Test;
 
 [PrefixTestClass]
-public class FlatCircleLocator {
+public class FlatDiskLocator {
   [TestMethod]
-  public void SingleChunkCircleInFirstLocation() {
+  public void SingleChunkDiskInFirstLocation() {
     MemoryTerrainHeightReader reader = new();
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
-    Real.FlatCircleLocator locator =
+    Real.FlatDiskLocator locator =
         new(Framework.Api.Logger, survey, new(center, center),
             GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
     Assert.IsFalse(locator.Generate(null));
@@ -44,7 +44,7 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 2.5);
-    Real.FlatCircleLocator locator =
+    Real.FlatDiskLocator locator =
         new(Framework.Api.Logger, survey, new(center, center),
             GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
 
@@ -85,7 +85,7 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 2.5);
-    Real.FlatCircleLocator locator =
+    Real.FlatDiskLocator locator =
         new(Framework.Api.Logger, survey, new(center, center),
             GlobalConstants.ChunkSize / 2, 0, 0, 0);
 
@@ -125,7 +125,7 @@ public class FlatCircleLocator {
     Real.TerrainSurvey survey = new(reader);
 
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
-    Real.FlatCircleLocator locator =
+    Real.FlatDiskLocator locator =
         new(Framework.Api.Logger, survey, new(center, center),
             GlobalConstants.ChunkSize / 2, 1, 1, 1.0);
     Assert.IsFalse(locator.Generate(null));
@@ -147,8 +147,8 @@ public class FlatCircleLocator {
     Assert.AreEqual(new(center, 200, center), locator.Center);
 
     byte[] data = SerializerUtil.Serialize(locator);
-    Real.FlatCircleLocator copy =
-        SerializerUtil.Deserialize<Real.FlatCircleLocator>(data);
+    Real.FlatDiskLocator copy =
+        SerializerUtil.Deserialize<Real.FlatDiskLocator>(data);
     copy.Restore(Framework.Api.Logger, survey);
     Assert.AreEqual(new(center, 200, center), locator.Center);
   }

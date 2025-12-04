@@ -104,48 +104,48 @@ public class TerrainSurvey {
     _reader = reader;
   }
 
-  private TerrainStats GetStatsForRowOfCircle(IBlockAccessor accessor,
-                                              Vec2i center, int radiusSq,
-                                              int chunkZ, int zThickest,
-                                              int zThinnest, ref int area,
-                                              ref bool incomplete) {
+  private TerrainStats GetStatsForRowOfDisk(IBlockAccessor accessor,
+                                            Vec2i center, int radiusSq,
+                                            int chunkZ, int zThickest,
+                                            int zThinnest, ref int area,
+                                            ref bool incomplete) {
     // Calculate the x coordinates for the part of the row that intersects the
-    // circle.
+    // disk.
     int zPartialOffset = zThickest - center.Y;
     int xPartialOffset =
         (int)Math.Sqrt(radiusSq - zPartialOffset * zPartialOffset);
     int chunkXPartialBegin = BlockStartToChunk(center.X - xPartialOffset);
     int chunkXPartialEnd = BlockEndToChunk(center.X + xPartialOffset);
     // Calculate the x coordinates for the part of the row that are fully
-    // covered by the circle.
+    // covered by the disk.
     int zFullOffset = zThinnest - center.Y;
     int xFullOffsetSq = radiusSq - zFullOffset * zFullOffset;
     if (xFullOffsetSq < GlobalConstants.ChunkSize * GlobalConstants.ChunkSize) {
-      // No part of the row is fully covered by the circle.
-      return GetStatsForCirclePartialCover(accessor, center, radiusSq,
-                                           chunkXPartialBegin, chunkXPartialEnd,
-                                           chunkZ, ref area, ref incomplete);
+      // No part of the row is fully covered by the disk.
+      return GetStatsForDiskPartialCover(accessor, center, radiusSq,
+                                         chunkXPartialBegin, chunkXPartialEnd,
+                                         chunkZ, ref area, ref incomplete);
     }
     int xFullOffset = (int)Math.Sqrt(xFullOffsetSq);
     int chunkXFullBegin = BlockEndToChunk(center.X - xFullOffset);
     int chunkXFullEnd = BlockStartToChunk(center.X + xFullOffset);
-    TerrainStats results = GetStatsForCirclePartialCover(
+    TerrainStats results = GetStatsForDiskPartialCover(
         accessor, center, radiusSq, chunkXPartialBegin, chunkXFullBegin, chunkZ,
         ref area, ref incomplete);
     area += (chunkXFullEnd - chunkXFullBegin) * GlobalConstants.ChunkSize *
             GlobalConstants.ChunkSize;
     results.Add(GetColumnRowStats(accessor, chunkXFullBegin, chunkXFullEnd,
                                   chunkZ, ref incomplete));
-    results.Add(GetStatsForCirclePartialCover(
-        accessor, center, radiusSq, chunkXFullEnd, chunkXPartialEnd, chunkZ,
-        ref area, ref incomplete));
+    results.Add(GetStatsForDiskPartialCover(accessor, center, radiusSq,
+                                            chunkXFullEnd, chunkXPartialEnd,
+                                            chunkZ, ref area, ref incomplete));
     return results;
   }
 
   private TerrainStats
-  GetStatsForCirclePartialCover(IBlockAccessor accessor, Vec2i center,
-                                int radiusSq, int chunkXBegin, int chunkXEnd,
-                                int chunkZ, ref int area, ref bool incomplete) {
+  GetStatsForDiskPartialCover(IBlockAccessor accessor, Vec2i center,
+                              int radiusSq, int chunkXBegin, int chunkXEnd,
+                              int chunkZ, ref int area, ref bool incomplete) {
     TerrainStats results = new();
     for (int chunkX = chunkXBegin; chunkX < chunkXEnd; ++chunkX) {
       ChunkColumnSurvey chunk = GetColumn(accessor, new Vec2i(chunkX, chunkZ));
@@ -200,22 +200,22 @@ public class TerrainSurvey {
   }
 
   /// <summary>
-  /// Gets the stats for all blocks covered by the given circle. A block is
+  /// Gets the stats for all blocks covered by the given disk. A block is
   /// considered to be covered if (dist(pos,center) &lt;= radius).
   /// </summary>
   /// <param name="accessor"></param>
-  /// <param name="center">circle center</param>
-  /// <param name="radius">radius of circle</param>
+  /// <param name="center">disk center</param>
+  /// <param name="radius">radius of disk</param>
   /// <param name="area">
-  /// the number of blocks covered by the circle
+  /// the number of blocks covered by the disk
   /// </param>
   /// <param name="incomplete">
   /// set to true if one or more of the requested chunks was unavailable
   /// </param>
-  /// <returns>the stats for all blocks in the circle</returns>
-  public TerrainStats GetCircleStats(IBlockAccessor accessor, Vec2i center,
-                                     int radius, out int area,
-                                     ref bool incomplete) {
+  /// <returns>the stats for all blocks in the disk</returns>
+  public TerrainStats GetDiskStats(IBlockAccessor accessor, Vec2i center,
+                                   int radius, out int area,
+                                   ref bool incomplete) {
     area = 0;
     int radiusSq = radius * radius;
     TerrainStats results = new();
@@ -223,29 +223,29 @@ public class TerrainSurvey {
     // Move y to the north end of the following chunk so that it is in a known
     // location.
     y += GlobalConstants.ChunkSize - y % GlobalConstants.ChunkSize;
-    // Process the northern half of the circle.
+    // Process the northern half of the disk.
     for (; y <= center.Y; y += GlobalConstants.ChunkSize) {
       // y points to one chunk south of what needs to be added in this
       // iteration. Here, each row is thicker on the southern side of the chunk.
-      results.Add(GetStatsForRowOfCircle(
+      results.Add(GetStatsForRowOfDisk(
           accessor, center, radiusSq, BlockStartToChunk(y) - 1, y,
           y - GlobalConstants.ChunkSize, ref area, ref incomplete));
     }
 
-    // Process the center of the circle. y points to the row to the south of the
+    // Process the center of the disk. y points to the row to the south of the
     // center row.
     int yThinnest = center.Y > y - GlobalConstants.ChunkSize / 2
                         ? y - GlobalConstants.ChunkSize
                         : y;
-    results.Add(GetStatsForRowOfCircle(accessor, center, radiusSq,
-                                       BlockStartToChunk(center.Y), center.Y,
-                                       yThinnest, ref area, ref incomplete));
+    results.Add(GetStatsForRowOfDisk(accessor, center, radiusSq,
+                                     BlockStartToChunk(center.Y), center.Y,
+                                     yThinnest, ref area, ref incomplete));
 
-    // Process the southern half of the circle.
+    // Process the southern half of the disk.
     for (; y <= center.Y + radius; y += GlobalConstants.ChunkSize) {
       // y points to the northmost block of the chunk row to be added in this
       // iteration. Here, each row is thicker on the northern side of the chunk.
-      results.Add(GetStatsForRowOfCircle(
+      results.Add(GetStatsForRowOfDisk(
           accessor, center, radiusSq, BlockStartToChunk(y), y,
           y + GlobalConstants.ChunkSize, ref area, ref incomplete));
     }

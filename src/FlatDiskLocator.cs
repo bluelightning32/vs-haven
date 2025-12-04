@@ -39,12 +39,12 @@ interface IWorldGenerator {
 }
 
 /// <summary>
-/// Searches for the center for a circle, such that the that the circle is
+/// Searches for the center for a disk, such that the that the disk is
 /// sufficiently flat. The search is done in a spiral pattern from the given
 /// start location.
 /// </summary>
 [ProtoContract]
-public class FlatCircleLocator : IWorldGenerator {
+public class FlatDiskLocator : IWorldGenerator {
   [ProtoMember(1)]
   private readonly Vec2i _start;
 
@@ -91,24 +91,24 @@ public class FlatCircleLocator : IWorldGenerator {
   /// the roughness allowed per block of the center
   /// </param>
   /// <param name="minSolid">minimum land (as opposed to water) ratio</param>
-  public FlatCircleLocator(ILogger logger, TerrainSurvey terrain, Vec2i start,
-                           int radius, double maxRoughnessPerimeter,
-                           double maxRoughnessArea, double minSolid) {
+  public FlatDiskLocator(ILogger logger, TerrainSurvey terrain, Vec2i start,
+                         int radius, double maxRoughnessPerimeter,
+                         double maxRoughnessArea, double minSolid) {
     _logger = logger;
     _terrain = terrain;
     _start = start.Copy();
     _radius = radius;
     double perimeter = Math.Tau * radius;
-    int estimatedCircleArea = (int)(Math.PI * radius * radius);
+    int estimatedArea = (int)(Math.PI * radius * radius);
     _maxRoughness = (int)(maxRoughnessPerimeter * perimeter +
-                          maxRoughnessArea * estimatedCircleArea);
+                          maxRoughnessArea * estimatedArea);
     _minSolid = minSolid;
   }
 
   /// <summary>
   /// Constructor for deserialization
   /// </summary>
-  private FlatCircleLocator() {}
+  private FlatDiskLocator() {}
 
   /// <summary>
   /// Call this to initialize the remaining fields after the object has been
@@ -159,8 +159,8 @@ public class FlatCircleLocator : IWorldGenerator {
   private bool IsGoodLocation(IBlockAccessor accessor, out bool incomplete) {
     Vec2i center = Center2D;
     incomplete = false;
-    TerrainStats stats = _terrain.GetCircleStats(accessor, center, _radius,
-                                                 out int area, ref incomplete);
+    TerrainStats stats = _terrain.GetDiskStats(accessor, center, _radius,
+                                               out int area, ref incomplete);
     // The roughness check may exclude the location even before all of the
     // chunks are surveyed.
     if (stats.Roughness > _maxRoughness) {
@@ -174,7 +174,7 @@ public class FlatCircleLocator : IWorldGenerator {
     }
     _y = stats.SumHeight / area;
     _logger.Build(
-        $"Located flat circle at ({Center}) with radius {_radius} and " +
+        $"Located flat disk at ({Center}) with radius {_radius} and " +
         $"roughness {stats.Roughness / (double)area} and " +
         $"{stats.SolidCount / (double)area} solid ratio.");
     return true;

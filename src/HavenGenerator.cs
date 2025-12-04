@@ -15,7 +15,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
   private readonly ResourceZonePlan _resourceZone;
 
   [ProtoMember(2)]
-  private readonly FlatCircleLocator _centerLocator;
+  private readonly FlatDiskLocator _centerLocator;
 
   [field:ProtoMember(3)]
   public TerrainSurvey Terrain { get; }

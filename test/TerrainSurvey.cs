@@ -11,15 +11,15 @@ namespace Haven.Test;
 [PrefixTestClass]
 public class TerrainSurvey {
   [TestMethod]
-  public void GetCircleStatsMissingChunk() {
+  public void GetDiskStatsMissingChunk() {
     MemoryTerrainHeightReader reader = new();
 
     Real.TerrainSurvey survey = new(reader);
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
     bool incomplete = false;
-    TerrainStats stats = survey.GetCircleStats(null, new Vec2i(center, center),
-                                               GlobalConstants.ChunkSize / 2,
-                                               out int area, ref incomplete);
+    TerrainStats stats = survey.GetDiskStats(null, new Vec2i(center, center),
+                                             GlobalConstants.ChunkSize / 2,
+                                             out int area, ref incomplete);
     Assert.IsTrue(incomplete);
     Assert.AreEqual(0, stats.SolidCount);
     Assert.AreEqual(0, stats.Roughness);
@@ -56,82 +56,81 @@ public class TerrainSurvey {
   }
 
   [TestMethod]
-  public void GetCircleStatsR1ChunkCenter() {
+  public void GetDiskStatsR1ChunkCenter() {
     MemoryTerrainHeightReader reader = new();
 
-    // Fill the chunk that holds the circle
-    const int circleHeight = 200;
-    reader.FillChunk(1, 1, circleHeight, 1, 1);
+    // Fill the chunk that holds the disk
+    const int diskHeight = 200;
+    reader.FillChunk(1, 1, diskHeight, 1, 1);
 
     Real.TerrainSurvey survey = new(reader);
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
     bool incomplete = false;
-    // A circle of radius 1 covers 5 blocks in this shape:
+    // A disk of radius 1 covers 5 blocks in this shape:
     //   x
     // x x x
     //   x
-    TerrainStats stats = survey.GetCircleStats(null, new Vec2i(center, center),
-                                               1, out int area, ref incomplete);
+    TerrainStats stats = survey.GetDiskStats(null, new Vec2i(center, center), 1,
+                                             out int area, ref incomplete);
 
     Assert.IsFalse(incomplete);
     Assert.AreEqual(5, stats.SolidCount);
     Assert.AreEqual(5, area);
-    Assert.AreEqual(GetCircleExpectedArea(1), stats.SolidCount);
+    Assert.AreEqual(GetDiskExpectedArea(1), stats.SolidCount);
     int chunkCenter = GlobalConstants.ChunkSize / 2;
-    Assert.AreEqual(5 * circleHeight + 2 * (chunkCenter - 1) + 6 * chunkCenter +
+    Assert.AreEqual(5 * diskHeight + 2 * (chunkCenter - 1) + 6 * chunkCenter +
                         2 * (chunkCenter + 1),
                     stats.SumHeight);
     Assert.AreEqual(10, stats.Roughness);
   }
 
   [TestMethod]
-  public void GetCircleStatsR1CrossSouthEastBorder() {
+  public void GetDiskStatsR1CrossSouthEastBorder() {
     MemoryTerrainHeightReader reader = new();
 
-    // Fill the chunk that holds the circle
-    const int circleHeight = 200;
-    reader.FillChunk(0, 0, circleHeight, 1, 1);
-    reader.FillChunk(1, 0, circleHeight + 32, 1, 1);
-    reader.FillChunk(0, 1, circleHeight + 32, 1, 1);
+    // Fill the chunk that holds the disk
+    const int diskHeight = 200;
+    reader.FillChunk(0, 0, diskHeight, 1, 1);
+    reader.FillChunk(1, 0, diskHeight + 32, 1, 1);
+    reader.FillChunk(0, 1, diskHeight + 32, 1, 1);
 
     Real.TerrainSurvey survey = new(reader);
     bool incomplete = false;
-    // A circle of radius 1 covers 5 blocks in this shape:
+    // A disk of radius 1 covers 5 blocks in this shape:
     //   x
     // x x x
     //   x
-    TerrainStats stats = survey.GetCircleStats(null, new Vec2i(31, 31), 1,
-                                               out int area, ref incomplete);
+    TerrainStats stats = survey.GetDiskStats(null, new Vec2i(31, 31), 1,
+                                             out int area, ref incomplete);
 
     Assert.IsFalse(incomplete);
     Assert.AreEqual(5, stats.SolidCount);
     Assert.AreEqual(5, area);
-    Assert.AreEqual(5 * circleHeight + 2 * 30 + 6 * 31 + 2 * 32,
-                    stats.SumHeight);
+    Assert.AreEqual(5 * diskHeight + 2 * 30 + 6 * 31 + 2 * 32, stats.SumHeight);
     Assert.AreEqual(10, stats.Roughness);
   }
 
   [TestMethod]
-  public void GetCircleStatsR1SweepSouth() {
+  public void GetDiskStatsR1SweepSouth() {
     MemoryTerrainHeightReader reader = new();
 
-    // Fill the chunk that holds the circle
-    const int circleHeight = 200;
+    // Fill the chunk that holds the disk
+    const int diskHeight = 200;
     for (int z = 1; z < 5; ++z) {
-      reader.FillChunk(1, z, circleHeight, 0, 0);
+      reader.FillChunk(1, z, diskHeight, 0, 0);
     }
 
     Real.TerrainSurvey survey = new(reader);
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
     for (int zOffset = 0; zOffset < 2 * GlobalConstants.ChunkSize; ++zOffset) {
       bool incomplete = false;
-      // A circle of radius 1 covers 5 blocks in this shape:
+      // A disk of radius 1 covers 5 blocks in this shape:
       //   x
       // x x x
       //   x
       TerrainStats stats =
-          survey.GetCircleStats(null, new Vec2i(center, center + zOffset), 1,
-                                out int area, ref incomplete);
+          survey.GetDiskStats(null, new Vec2i(center, center + zOffset), 1,
+                              out int area, ref incomplete);
 
       Assert.IsFalse(
           incomplete,
@@ -140,17 +139,17 @@ public class TerrainSurvey {
       Assert.AreEqual(
           5, stats.SolidCount,
           $"Solid count was {stats.SolidCount} instead of 5 at zOffset={zOffset}");
-      Assert.AreEqual(5 * circleHeight, stats.SumHeight);
+      Assert.AreEqual(5 * diskHeight, stats.SumHeight);
       Assert.AreEqual(0, stats.Roughness);
     }
   }
 
   /// <summary>
-  /// This is a slow but very safe way to calculate the circle area
+  /// This is a slow but very safe way to calculate the disk area
   /// </summary>
   /// <param name="radius"></param>
   /// <returns></returns>
-  private int GetCircleExpectedArea(int radius) {
+  private int GetDiskExpectedArea(int radius) {
     int count = 0;
     for (int z = 0; z <= 2 * radius; ++z) {
       for (int x = 0; x <= 2 * radius; ++x) {
@@ -164,14 +163,14 @@ public class TerrainSurvey {
   }
 
   [TestMethod]
-  public void GetCircleStatsSingleChunk() {
+  public void GetDiskStatsSingleChunk() {
     MemoryTerrainHeightReader reader = new();
-    const int circleHeight = 50;
+    const int diskHeight = 50;
     // Fill nearby chunks
     for (int x = 0; x < 3; ++x) {
       for (int z = 0; z < 3; ++z) {
         reader.FillChunk(x, z,
-                         circleHeight + x * GlobalConstants.ChunkSize +
+                         diskHeight + x * GlobalConstants.ChunkSize +
                              z * GlobalConstants.ChunkSize,
                          1, 1);
       }
@@ -180,20 +179,20 @@ public class TerrainSurvey {
     Real.TerrainSurvey survey = new(reader);
     int center = (int)(GlobalConstants.ChunkSize * 1.5);
     bool incomplete = false;
-    TerrainStats stats = survey.GetCircleStats(null, new Vec2i(center, center),
-                                               GlobalConstants.ChunkSize / 2,
-                                               out int area, ref incomplete);
+    TerrainStats stats = survey.GetDiskStats(null, new Vec2i(center, center),
+                                             GlobalConstants.ChunkSize / 2,
+                                             out int area, ref incomplete);
     Assert.IsFalse(incomplete);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize / 2), area);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize / 2),
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize / 2), area);
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize / 2),
                     stats.SolidCount);
     // Every block has 2 roughness.
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize / 2) * 2,
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize / 2) * 2,
                     stats.Roughness);
   }
 
   [TestMethod]
-  public void GetCircleStats4Chunks() {
+  public void GetDiskStats4Chunks() {
     MemoryTerrainHeightReader reader = new();
     // Fill nearby chunks
     for (int x = 0; x < 4; ++x) {
@@ -205,19 +204,19 @@ public class TerrainSurvey {
     Real.TerrainSurvey survey = new(reader);
     int center = GlobalConstants.ChunkSize * 2;
     bool incomplete = false;
-    TerrainStats stats = survey.GetCircleStats(null, new Vec2i(center, center),
-                                               GlobalConstants.ChunkSize / 2,
-                                               out int area, ref incomplete);
+    TerrainStats stats = survey.GetDiskStats(null, new Vec2i(center, center),
+                                             GlobalConstants.ChunkSize / 2,
+                                             out int area, ref incomplete);
     Assert.IsFalse(incomplete);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize / 2),
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize / 2),
                     stats.SolidCount);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize / 2), area);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize / 2),
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize / 2), area);
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize / 2),
                     stats.Roughness);
   }
 
   [TestMethod]
-  public void GetCircleStats9Chunks() {
+  public void GetDiskStats9Chunks() {
     MemoryTerrainHeightReader reader = new();
     // Fill nearby chunks
     for (int x = 0; x < 4; ++x) {
@@ -229,19 +228,19 @@ public class TerrainSurvey {
     Real.TerrainSurvey survey = new(reader);
     int center = (int)(GlobalConstants.ChunkSize * 2.5);
     bool incomplete = false;
-    TerrainStats stats = survey.GetCircleStats(null, new Vec2i(center, center),
-                                               GlobalConstants.ChunkSize,
-                                               out int area, ref incomplete);
+    TerrainStats stats = survey.GetDiskStats(null, new Vec2i(center, center),
+                                             GlobalConstants.ChunkSize,
+                                             out int area, ref incomplete);
     Assert.IsFalse(incomplete);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize),
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize),
                     stats.SolidCount);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize), area);
-    Assert.AreEqual(GetCircleExpectedArea(GlobalConstants.ChunkSize),
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize), area);
+    Assert.AreEqual(GetDiskExpectedArea(GlobalConstants.ChunkSize),
                     stats.Roughness);
   }
 
   [TestMethod]
-  public void GetCircleStats2CRSweepDiag() {
+  public void GetDiskStats2CRSweepDiag() {
     MemoryTerrainHeightReader reader = new();
     // Fill nearby chunks
     for (int x = 0; x < 7; ++x) {
@@ -254,15 +253,14 @@ public class TerrainSurvey {
     for (int center = GlobalConstants.ChunkSize * 3;
          center < GlobalConstants.ChunkSize * 4; ++center) {
       bool incomplete = false;
-      TerrainStats stats = survey.GetCircleStats(
-          null, new Vec2i(center, center), 2 * GlobalConstants.ChunkSize,
-          out int area, ref incomplete);
+      TerrainStats stats = survey.GetDiskStats(null, new Vec2i(center, center),
+                                               2 * GlobalConstants.ChunkSize,
+                                               out int area, ref incomplete);
       Assert.IsFalse(incomplete);
-      Assert.AreEqual(GetCircleExpectedArea(2 * GlobalConstants.ChunkSize),
+      Assert.AreEqual(GetDiskExpectedArea(2 * GlobalConstants.ChunkSize),
                       stats.SolidCount);
-      Assert.AreEqual(GetCircleExpectedArea(2 * GlobalConstants.ChunkSize),
-                      area);
-      Assert.AreEqual(GetCircleExpectedArea(2 * GlobalConstants.ChunkSize),
+      Assert.AreEqual(GetDiskExpectedArea(2 * GlobalConstants.ChunkSize), area);
+      Assert.AreEqual(GetDiskExpectedArea(2 * GlobalConstants.ChunkSize),
                       stats.Roughness);
     }
   }
