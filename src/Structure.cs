@@ -20,7 +20,7 @@ public class Structure {
     List<SchematicData> result = [];
     List<string> remove = null;
     foreach (KeyValuePair<string, SchematicData> entry in Schematics) {
-      if (entry.Value.Resolve(worldForResolve) == null) {
+      if (entry.Value.Resolve(worldForResolve, 0) == null) {
         HavenSystem.Logger.Error(
             $"Unable to resolve schematic {entry.Key} referenced in {Code}.");
         remove ??= [];
@@ -44,7 +44,8 @@ public class Structure {
     while (remaining > 0) {
       int index = rand.NextInt(Schematics.Count);
       SchematicData schematic = available[index];
-      OffsetBlockSchematic resolved = schematic.Resolve(worldForResolve);
+      int angle = rand.NextInt(4) * 90;
+      OffsetBlockSchematic resolved = schematic.Resolve(worldForResolve, angle);
       if (resolved == null) {
         HavenSystem.Logger.Error(
             $"Unable to resolve schematic {schematic.Schematic} referenced in {Code}.");

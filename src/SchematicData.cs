@@ -86,7 +86,7 @@ public class SchematicData {
   [JsonProperty]
   public TerrainProbe[] Probes = null;
 
-  public OffsetBlockSchematic Resolve(IWorldAccessor worldForResolve) {
+  public OffsetBlockSchematic Resolve(IWorldAccessor worldForResolve, int angle) {
     string path = Schematic.WithPathPrefixOnce("worldgen/schematics/")
                       .WithPathAppendixOnce(".json");
     OffsetBlockSchematic resolved =
@@ -94,6 +94,7 @@ public class SchematicData {
     if (resolved == null) {
       return null;
     }
+    resolved.TransformWhilePacked(worldForResolve, EnumOrigin.StartPos, angle);
     resolved.OffsetY = OffsetY;
     resolved.UpdateOutline();
     if (Probes != null) {
