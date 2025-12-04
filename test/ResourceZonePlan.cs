@@ -168,7 +168,7 @@ public class ResourceZonePlan {
   [TestMethod]
   public void HasStructures() {
     ResourceZoneConfig config = new();
-    config.Resolve(Framework.Api.Logger, Framework.Server.AssetManager);
+    config.Resolve(Framework.Api.Logger, Framework.Api.World);
     BlockPos center = new(10000, 100, 10000);
     NormalRandom rand = new(0);
     Real.ResourceZonePlan plan = new(null, config, center, rand);
@@ -184,8 +184,7 @@ public class ResourceZonePlan {
     NormalRandom rand = new(0);
     while (schematics.Count < 5) {
       foreach (Real.Structure structure in structures) {
-        schematics.AddRange(
-            structure.Select(Framework.Server.AssetManager, rand));
+        schematics.AddRange(structure.Select(Framework.Api.World, rand));
       }
     }
     double minRadius = 1;
@@ -232,8 +231,7 @@ public class ResourceZonePlan {
     NormalRandom rand = new(0);
     while (schematics.Count < 5) {
       foreach (Real.Structure structure in structures) {
-        schematics.AddRange(
-            structure.Select(Framework.Server.AssetManager, rand));
+        schematics.AddRange(structure.Select(Framework.Api.World, rand));
       }
     }
     double minRadius = 100;

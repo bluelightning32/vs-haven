@@ -24,7 +24,7 @@ public class Structure {
     Assert.IsGreaterThanOrEqualTo(1, stone.Count.avg - stone.Count.var);
     NormalRandom rand = new(0);
     List<Real.OffsetBlockSchematic> schematics =
-        stone.Select(Framework.Server.AssetManager, rand).ToList();
+        stone.Select(Framework.Api.World, rand).ToList();
     Assert.IsGreaterThanOrEqualTo(1, schematics.Count);
   }
 
@@ -38,7 +38,7 @@ public class Structure {
     int count = 0;
     int attempts = 10;
     for (int i = 0; i < attempts; ++i) {
-      count += stone.Select(Framework.Server.AssetManager, rand).Count();
+      count += stone.Select(Framework.Api.World, rand).Count();
     }
     Assert.IsLessThanOrEqualTo(0.7 * attempts, count);
     Assert.IsGreaterThanOrEqualTo(0.3 * attempts, count);

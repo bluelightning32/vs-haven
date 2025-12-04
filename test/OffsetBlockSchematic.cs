@@ -119,7 +119,7 @@ public class OffsetBlockSchematic {
     Real.Structure stone = Load("stone");
     NormalRandom rand = new(0);
     Real.OffsetBlockSchematic schematic =
-        stone.Select(Framework.Server.AssetManager, rand).First();
+        stone.Select(Framework.Api.World, rand).First();
     BlockPos start = new(0, 0, 0);
     Assert.IsNull(
         schematic.Intersects(start, schematic, new BlockPos(1000, 0, 0)));
@@ -132,7 +132,7 @@ public class OffsetBlockSchematic {
     Real.Structure stone = Load("stone");
     NormalRandom rand = new(0);
     Real.OffsetBlockSchematic schematic =
-        stone.Select(Framework.Server.AssetManager, rand).First();
+        stone.Select(Framework.Api.World, rand).First();
 
     BlockPos start = new(0, 0, 0);
     BlockPos otherStart = new(0, 0, 0);
@@ -149,7 +149,7 @@ public class OffsetBlockSchematic {
   public void AutoConfigureProbesCornersAndMid() {
     int sideLen = Real.OffsetBlockSchematic.AutoProbeSpacing + 2;
     Real.OffsetBlockSchematic box = CreateGraniteBox(sideLen, 1, sideLen, 0);
-    box.AutoConfigureProbes();
+    box.AutoConfigureProbes(Framework.Api.World);
     (int, int)[] expectedPositions = [
       new(0, 0),
       new(sideLen - 1, 0),
@@ -175,7 +175,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void AutoConfigureProbesNeg1YOffset() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, -1);
-    box.AutoConfigureProbes();
+    box.AutoConfigureProbes(Framework.Api.World);
     CollectionAssert.AreEquivalent(
         new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -2, YEnd = 0 } },
         box.Probes);
@@ -184,7 +184,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void AutoConfigureProbesTallNeg2YOffset() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 3, 1, -2);
-    box.AutoConfigureProbes();
+    box.AutoConfigureProbes(Framework.Api.World);
     CollectionAssert.AreEquivalent(
         new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -3, YEnd = 1 } },
         box.Probes);
@@ -193,7 +193,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void AutoConfigureProbesPos2YOffset() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 2);
-    box.AutoConfigureProbes();
+    box.AutoConfigureProbes(Framework.Api.World);
     CollectionAssert.AreEquivalent(
         new TerrainProbe[] { new() { X = 0, Z = 0, YMin = -1, YEnd = 0 } },
         box.Probes);
@@ -202,7 +202,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void AutoConfigureProbesOnlySurface0YOffset() {
     Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, 0);
-    top.AutoConfigureProbes();
+    top.AutoConfigureProbes(Framework.Api.World);
     CollectionAssert.AreEquivalent(
         new TerrainProbe[] { new() { X = 1, Z = 1, YMin = -1, YEnd = 2 } },
         top.Probes);
@@ -211,7 +211,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void AutoConfigureProbesOnlySurfaceNeg1YOffset() {
     Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, -1);
-    top.AutoConfigureProbes();
+    top.AutoConfigureProbes(Framework.Api.World);
     (int, int)[] expectedPositions = [
       new(0, 0),
       new(2, 0),
@@ -233,7 +233,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void ProbeTerrainUnloadedChunk() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
-    box.AutoConfigureProbes();
+    box.AutoConfigureProbes(Framework.Api.World);
     MemoryTerrainHeightReader reader = new();
     Real.TerrainSurvey survey = new(reader);
 
@@ -356,7 +356,7 @@ public class OffsetBlockSchematic {
   [TestMethod]
   public void ProbeTerrainSlabSitsOnTop() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(2, 1, 2, 0);
-    box.AutoConfigureProbes();
+    box.AutoConfigureProbes(Framework.Api.World);
     Assert.AreEqual(-1, box.Probes[0].YMin);
     Assert.AreEqual(1, box.Probes[0].YEnd);
 

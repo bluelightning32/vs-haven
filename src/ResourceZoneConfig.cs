@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
@@ -18,15 +17,16 @@ public class ResourceZoneConfig {
   [JsonProperty]
   public double MinAboveSea = 0.9;
 
-  private IAssetManager _assetManager = null;
+  private IWorldAccessor _worldForResolve = null;
   private ICollection<Structure> _structures = null;
 
   public ResourceZoneConfig() {}
 
-  public void Resolve(ILogger logger, IAssetManager assetManager) {
-    _assetManager = assetManager;
+  public void Resolve(ILogger logger, IWorldAccessor worldForResolve) {
+    _worldForResolve = worldForResolve;
     List<IAsset> structureAssets =
-        assetManager.GetManyInCategory("worldgen", "havenstructures/");
+        _worldForResolve.AssetManager.GetManyInCategory("worldgen",
+                                                        "havenstructures/");
     _structures = [];
     foreach (IAsset asset in structureAssets) {
       try {
@@ -42,7 +42,7 @@ public class ResourceZoneConfig {
   public IEnumerable<OffsetBlockSchematic> SelectStructures(IRandom rand) {
     List<OffsetBlockSchematic> schematics = [];
     foreach (Structure structure in _structures) {
-      schematics.AddRange(structure.Select(_assetManager, rand));
+      schematics.AddRange(structure.Select(_worldForResolve, rand));
     }
     return schematics;
   }

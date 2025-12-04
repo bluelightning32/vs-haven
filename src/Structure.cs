@@ -16,11 +16,11 @@ public class Structure {
   [JsonProperty]
   public readonly NatFloat Count;
 
-  private List<SchematicData> Resolve(IAssetManager assetManager) {
+  private List<SchematicData> Resolve(IWorldAccessor worldForResolve) {
     List<SchematicData> result = [];
     List<string> remove = null;
     foreach (KeyValuePair<string, SchematicData> entry in Schematics) {
-      if (entry.Value.Resolve(assetManager) == null) {
+      if (entry.Value.Resolve(worldForResolve) == null) {
         HavenSystem.Logger.Error(
             $"Unable to resolve schematic {entry.Key} referenced in {Code}.");
         remove ??= [];
@@ -37,14 +37,14 @@ public class Structure {
     return result;
   }
 
-  public IEnumerable<OffsetBlockSchematic> Select(IAssetManager assetManager,
-                                                  IRandom rand) {
-    List<SchematicData> available = Resolve(assetManager);
+  public IEnumerable<OffsetBlockSchematic>
+  Select(IWorldAccessor worldForResolve, IRandom rand) {
+    List<SchematicData> available = Resolve(worldForResolve);
     int remaining = (int)Count.nextFloat(1, rand);
     while (remaining > 0) {
       int index = rand.NextInt(Schematics.Count);
       SchematicData schematic = available[index];
-      OffsetBlockSchematic resolved = schematic.Resolve(assetManager);
+      OffsetBlockSchematic resolved = schematic.Resolve(worldForResolve);
       if (resolved == null) {
         HavenSystem.Logger.Error(
             $"Unable to resolve schematic {schematic.Schematic} referenced in {Code}.");

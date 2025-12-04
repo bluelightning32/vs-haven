@@ -16,7 +16,7 @@ public class SchematicPlacer {
                    ISchematicPlacerSupervisor supervisor) {
     Real.OffsetBlockSchematic schematic =
         OffsetBlockSchematic.CreateGraniteBox(sx, sy, sz, offsetY);
-    schematic.AutoConfigureProbes();
+    schematic.AutoConfigureProbes(Framework.Api.World);
     return new Real.SchematicPlacer(schematic, offset, supervisor);
   }
 
@@ -160,15 +160,15 @@ public class SchematicPlacer {
   [TestMethod]
   public void TryFinalizeLocationFailure() {
     MockSchematicPlacerSupervisor supervisor = new();
-    int FinalizeLocationCalls = 0;
+    int finalizeLocationCalls = 0;
     Real.SchematicPlacer placer = null;
     BlockPos pos =
         new(3 * GlobalConstants.ChunkSize, 101, 3 * GlobalConstants.ChunkSize);
     bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
-      Assert.IsLessThan(2, FinalizeLocationCalls);
-      ++FinalizeLocationCalls;
+      Assert.IsLessThan(2, finalizeLocationCalls);
+      ++finalizeLocationCalls;
       Assert.AreEqual(placer, placer2);
-      if (FinalizeLocationCalls == 2) {
+      if (finalizeLocationCalls == 2) {
         Assert.AreNotEqual(pos, pos2);
         Assert.IsLessThan(GlobalConstants.ChunkSize * 2,
                           pos2.ManhattenDistance(pos));
@@ -187,7 +187,7 @@ public class SchematicPlacer {
         Framework.Server.GetBlockAccessorBulkUpdate(false, false);
 
     Assert.IsTrue(placer.Generate(accessor));
-    Assert.AreEqual(2, FinalizeLocationCalls);
+    Assert.AreEqual(2, finalizeLocationCalls);
   }
 
   [TestMethod]

@@ -24,7 +24,7 @@ public class ServerConfig {
   [JsonProperty]
   public ResourceZoneConfig ResourceZone = new();
 
-  public void Resolve(ILogger logger, IAssetManager assetManager) {
-    ResourceZone.Resolve(logger, assetManager);
+  public void Resolve(ILogger logger, IWorldAccessor worldForResolve) {
+    ResourceZone.Resolve(logger, worldForResolve);
   }
 }

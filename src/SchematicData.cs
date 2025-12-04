@@ -86,11 +86,11 @@ public class SchematicData {
   [JsonProperty]
   public TerrainProbe[] Probes = null;
 
-  public OffsetBlockSchematic Resolve(IAssetManager assetManager) {
+  public OffsetBlockSchematic Resolve(IWorldAccessor worldForResolve) {
     string path = Schematic.WithPathPrefixOnce("worldgen/schematics/")
                       .WithPathAppendixOnce(".json");
     OffsetBlockSchematic resolved =
-        assetManager.Get(path).ToObject<OffsetBlockSchematic>();
+        worldForResolve.AssetManager.Get(path).ToObject<OffsetBlockSchematic>();
     if (resolved == null) {
       return null;
     }
@@ -99,7 +99,7 @@ public class SchematicData {
     if (Probes != null) {
       resolved.Probes = Probes;
     } else {
-      resolved.AutoConfigureProbes();
+      resolved.AutoConfigureProbes(worldForResolve);
     }
     return resolved;
   }

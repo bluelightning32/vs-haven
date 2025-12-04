@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
@@ -32,19 +33,32 @@ public class OffsetBlockSchematic : BlockSchematic {
   /// Get the block positions that are considered solid enough that the count
   /// towards the column of a probe position.
   /// </summary>
+  /// <param name="worldForResolve"></param>
   /// <returns>all relatively solid positions</returns>
-  private HashSet<BlockPos> GetProbeSolidPositions() {
-    HashSet<BlockPos> positions = [];
-    for (int i = 0; i < Indices.Count; i++) {
-      int blockId = BlockIds[i];
+  private HashSet<BlockPos>
+  GetProbeSolidPositions(IWorldAccessor worldForResolve) {
+    HashSet<int> solidBlockIds = [];
+    foreach ((int blockId, AssetLocation name) in BlockCodes) {
       if (blockId == FillerBlockId) {
         continue;
       }
       if (blockId == PathwayBlockId) {
         continue;
       }
-      AssetLocation block = BlockCodes.GetValueOrDefault(blockId);
-      if (block == null) {
+      if (blockId == 0) {
+        // This is air
+        continue;
+      }
+      Block block = worldForResolve.GetBlock(blockId);
+      if (block.ForFluidsLayer) {
+        continue;
+      }
+      solidBlockIds.Add(blockId);
+    }
+    HashSet<BlockPos> positions = [];
+    for (int i = 0; i < Indices.Count; i++) {
+      int blockId = BlockIds[i];
+      if (!solidBlockIds.Contains(blockId)) {
         continue;
       }
 
@@ -69,8 +83,9 @@ public class OffsetBlockSchematic : BlockSchematic {
   /// Set Probes to an automatically selected values based on the OffsetY and
   /// Outline. See the auto configuration description at SchematicData.Probes.
   /// </summary>
-  public void AutoConfigureProbes() {
-    HashSet<BlockPos> probeSolid = GetProbeSolidPositions();
+  /// <param name="worldForResolve"></param>
+  public void AutoConfigureProbes(IWorldAccessor worldForResolve) {
+    HashSet<BlockPos> probeSolid = GetProbeSolidPositions(worldForResolve);
     int surface = int.Max(1, 1 - OffsetY);
     Cuboidi surfaceBox = Outline.GetBoundingBoxForIntersection(
         new Cuboidi(0, 0, 0, int.MaxValue, surface, int.MaxValue));
@@ -281,6 +296,10 @@ public class OffsetBlockSchematic : BlockSchematic {
     PlaceEntitiesAndBlockEntities(accessor, worldForResolve, pos, BlockCodes,
                                   ItemCodes, replaceBlockEntities: false, null,
                                   0, null, replaceMetaBlocks);
+  }
+
+  public bool UpdateTerrain(BlockPos offset) {
+    throw new NotImplementedException();
   }
 }
 

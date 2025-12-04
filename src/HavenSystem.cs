@@ -107,7 +107,7 @@ public class HavenSystem : ModSystem {
       ServerConfig = new();
       api.StoreModConfig(ServerConfig, configFile);
     }
-    ServerConfig.Resolve(Logger, api.Assets);
+    ServerConfig.Resolve(Logger, api.World);
   }
 
   private void ChunksLoaded(List<IWorldChunk> list) {
