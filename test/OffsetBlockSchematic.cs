@@ -267,8 +267,9 @@ public class OffsetBlockSchematic {
     reader.SetHeight(1, 0, 4);
     Real.TerrainSurvey survey = new(reader);
     // The terrain is easily within the probe's allowed range. So the preferred
-    // height should be an average of the surface height at both locations.
-    Assert.AreEqual(3, box.ProbeTerrain(survey, null, new(0, 0)));
+    // height should be an average of the surface height at both locations, plus
+    // 1 so that the schematic is placed on top of the surface.
+    Assert.AreEqual(4, box.ProbeTerrain(survey, null, new(0, 0)));
   }
 
   [TestMethod]

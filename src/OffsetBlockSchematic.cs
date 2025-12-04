@@ -246,9 +246,9 @@ public class OffsetBlockSchematic : BlockSchematic {
     if (incomplete) {
       return -1;
     }
-    // If the range allows it, place the structure at the average terrain
-    // height.
-    y = yTerrainSum / Probes.Length;
+    // If the range allows it, place the structure on top of the average terrain
+    // surface block y coordinate.
+    y = yTerrainSum / Probes.Length + 1;
     // Adjust the position so that it is within the allowed range.
     y = int.Max(y, yMin);
     y = int.Min(y, yMax - 1);
