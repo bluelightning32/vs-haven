@@ -29,9 +29,13 @@ public class SchematicPlacer : IWorldGenerator {
   [ProtoMember(1)]
   public readonly OffsetBlockSchematic Schematic;
   /// <summary>
-  /// Initially this is the proposed offset. The placer searches for a good
-  /// location near this. After a good location is found, this is updated to the
-  /// final location.
+  /// Initially this is the proposed offset. It is the location to place the
+  /// northwest bottom corner of the schematic. This does not include the effect
+  /// of OffsetY. For example, if OffsetY=-1, then the schematic may place a
+  /// block below the location at Offset.
+  ///
+  /// The placer searches for a good location near this. After a good location
+  /// is found, this is updated to the final location.
   /// </summary>
   [ProtoMember(2)]
   private BlockPos _offset;
@@ -69,7 +73,7 @@ public class SchematicPlacer : IWorldGenerator {
   /// <summary>
   /// Constructor for deserialization
   /// </summary>
-  private SchematicPlacer() { }
+  private SchematicPlacer() {}
 
   private bool FinalizeLocation(IBlockAccessor accessor) {
     while (_locationSearch != null) {
@@ -82,7 +86,7 @@ public class SchematicPlacer : IWorldGenerator {
         return false;
       }
       if (y >= 0) {
-        BlockPos updatedOffset = new(Offset.X, Offset.Y + y, Offset.Z);
+        BlockPos updatedOffset = new(testPos.X, y, testPos.Y);
         if (_supervisor.TryFinalizeLocation(this, updatedOffset)) {
           Offset = updatedOffset;
           _locationSearch = null;

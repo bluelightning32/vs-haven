@@ -74,7 +74,7 @@ public class SchematicPlacer {
     bool locationSelected = false;
     Real.SchematicPlacer placer = null;
     BlockPos pos =
-        new(3 * GlobalConstants.ChunkSize, 0, 3 * GlobalConstants.ChunkSize);
+        new(3 * GlobalConstants.ChunkSize, 100, 3 * GlobalConstants.ChunkSize);
     bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsFalse(locationSelected);
       locationSelected = true;
@@ -88,7 +88,7 @@ public class SchematicPlacer {
     // Mark the chunk as loaded.
     Framework.Api.WorldManager.LoadChunkColumnPriority(3, 3);
     Framework.Server.LoadChunksInline();
-    supervisor.FakeTerrain.FillChunk(3, 3, 0, 0, 0);
+    supervisor.FakeTerrain.FillChunk(3, 3, 100, 0, 0);
     IBulkBlockAccessor accessor =
         Framework.Server.GetBlockAccessorBulkUpdate(false, false);
 
@@ -102,12 +102,14 @@ public class SchematicPlacer {
     bool locationSelected = false;
     Real.SchematicPlacer placer = null;
     BlockPos pos =
-        new(3 * GlobalConstants.ChunkSize, 0, 3 * GlobalConstants.ChunkSize);
+        new(3 * GlobalConstants.ChunkSize, 100, 3 * GlobalConstants.ChunkSize);
     bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsFalse(locationSelected);
       locationSelected = true;
       Assert.AreNotEqual(pos, pos2);
-      Assert.IsLessThan(GlobalConstants.ChunkSize * 2, pos2.ManhattenDistance(pos));
+      Assert.IsTrue(pos.X != pos2.X || pos.Z != pos2.Z);
+      Assert.IsLessThan(GlobalConstants.ChunkSize * 2,
+                        pos2.ManhattenDistance(pos));
       Assert.AreEqual(placer, placer2);
       return true;
     }
@@ -119,11 +121,12 @@ public class SchematicPlacer {
     Framework.Server.LoadChunksInline();
     for (int z = 1; z < 4; ++z) {
       for (int x = 1; x < 4; ++x) {
-        supervisor.FakeTerrain.FillChunk(x, z, 1, 0, 0);
+        supervisor.FakeTerrain.FillChunk(x, z, 100, 0, 0);
       }
     }
-    // Make the initial location rough so that the placer has to find a new location.
-    supervisor.FakeTerrain.FillChunk(3, 3, 1, 4, 0);
+    // Make the initial location rough so that the placer has to find a new
+    // location.
+    supervisor.FakeTerrain.FillChunk(3, 3, 100, 4, 0);
     IBulkBlockAccessor accessor =
         Framework.Server.GetBlockAccessorBulkUpdate(false, false);
     Assert.IsTrue(placer.Generate(accessor));
