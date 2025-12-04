@@ -97,6 +97,40 @@ public class SchematicPlacer {
   }
 
   [TestMethod]
+  public void FindsGoodStructurePosition() {
+    MockSchematicPlacerSupervisor supervisor = new();
+    bool locationSelected = false;
+    Real.SchematicPlacer placer = null;
+    BlockPos pos =
+        new(3 * GlobalConstants.ChunkSize, 0, 3 * GlobalConstants.ChunkSize);
+    bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
+      Assert.IsFalse(locationSelected);
+      locationSelected = true;
+      Assert.AreNotEqual(pos, pos2);
+      Assert.IsLessThan(GlobalConstants.ChunkSize * 2, pos2.ManhattenDistance(pos));
+      Assert.AreEqual(placer, placer2);
+      return true;
+    }
+    supervisor.TryFinalizeLocationMock = FinalizeLocation;
+    placer = CreateGraniteBox(2, 1, 2, 0, pos, supervisor);
+
+    // Mark the chunk as loaded.
+    Framework.Api.WorldManager.LoadChunkColumnPriority(3, 3);
+    Framework.Server.LoadChunksInline();
+    for (int z = 1; z < 4; ++z) {
+      for (int x = 1; x < 4; ++x) {
+        supervisor.FakeTerrain.FillChunk(x, z, 1, 0, 0);
+      }
+    }
+    // Make the initial location rough so that the placer has to find a new location.
+    supervisor.FakeTerrain.FillChunk(3, 3, 1, 4, 0);
+    IBulkBlockAccessor accessor =
+        Framework.Server.GetBlockAccessorBulkUpdate(false, false);
+    Assert.IsTrue(placer.Generate(accessor));
+    Assert.IsTrue(locationSelected);
+  }
+
+  [TestMethod]
   public void SerializationRemembersPlacedBlocks() {
     MockSchematicPlacerSupervisor supervisor = new();
     Real.SchematicPlacer placer =

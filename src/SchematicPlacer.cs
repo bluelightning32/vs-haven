@@ -34,7 +34,7 @@ public class SchematicPlacer : IWorldGenerator {
   /// final location.
   /// </summary>
   [ProtoMember(2)]
-  BlockPos _offset;
+  private BlockPos _offset;
 
   public BlockPos Offset {
     get { return _offset; }
@@ -69,7 +69,7 @@ public class SchematicPlacer : IWorldGenerator {
   /// <summary>
   /// Constructor for deserialization
   /// </summary>
-  private SchematicPlacer() {}
+  private SchematicPlacer() { }
 
   private bool FinalizeLocation(IBlockAccessor accessor) {
     while (_locationSearch != null) {
@@ -87,6 +87,8 @@ public class SchematicPlacer : IWorldGenerator {
           Offset = updatedOffset;
           _locationSearch = null;
         }
+      } else {
+        _locationSearch.Next();
       }
     }
     return true;
