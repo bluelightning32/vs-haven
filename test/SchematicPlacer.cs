@@ -39,6 +39,30 @@ public class SchematicPlacer {
   }
 
   [TestMethod]
+  public void OffsetYNeg2() {
+    MockSchematicPlacerSupervisor supervisor = new();
+    Real.SchematicPlacer placer =
+        CreateGraniteBox(1, 3, 1, -2, new BlockPos(0, 4, 0), supervisor);
+    IBulkBlockAccessor accessor =
+        Framework.Server.GetBlockAccessorBulkUpdate(false, false);
+
+    // Mark the chunk as loaded.
+    Framework.Api.WorldManager.LoadChunkColumnPriority(0, 0);
+    Framework.Server.LoadChunksInline();
+    supervisor.FakeTerrain.FillChunk(0, 0, 3, 0, 0);
+
+    Assert.IsTrue(placer.Generate(accessor));
+    int lowestModified = 100;
+    int highestModified = -100;
+    foreach (BlockPos pos in accessor.StagedBlocks.Keys) {
+      lowestModified = int.Min(lowestModified, pos.Y);
+      highestModified = int.Max(highestModified, pos.Y);
+    }
+    Assert.AreEqual(2, lowestModified);
+    Assert.AreEqual(4, highestModified);
+  }
+
+  [TestMethod]
   public void OnlyPlacesBlocksOnce() {
     MockSchematicPlacerSupervisor supervisor = new();
     Real.SchematicPlacer placer =

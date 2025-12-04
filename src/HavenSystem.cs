@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 
 using Haven.BlockBehaviors;
 
 using Vintagestory.API.Common;
+using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 
 namespace Haven;
@@ -14,6 +16,12 @@ public class HavenSystem : ModSystem {
   public static ILogger Logger { get; private set; }
   public ServerConfig ServerConfig { get; private set; }
   public readonly CallbackScheduler Scheduler = new();
+
+  private IBlockAccessorRevertable _revertable = null;
+  private HavenGenerator _activeRevertableGenerator = null;
+  private ChunkLoader _loader = null;
+  private TerrainHeightReader _terrain = null;
+  private ServerCommands _commands = null;
 
   public override double ExecuteOrder() { return 1.0; }
 
@@ -36,11 +44,54 @@ public class HavenSystem : ModSystem {
   public override void StartServerSide(ICoreServerAPI sapi) {
     base.StartServerSide(sapi);
     LoadConfigFile(sapi);
+    _revertable = sapi.World.GetBlockAccessorRevertable(true, true);
+    _loader = new(sapi.Event, sapi.WorldManager, sapi.World.BlockAccessor,
+                  ChunksLoaded);
+    _terrain = new(_loader, false);
+    _commands = new(sapi, this);
   }
 
   public override void Dispose() {
+    _revertable = null;
+    _commands = null;
     Scheduler.Dispose();
     base.Dispose();
+  }
+
+  public bool GenerateHaven(BlockPos center) {
+    if (_activeRevertableGenerator != null) {
+      return false;
+    }
+    Logger.Build("Manual haven generation started.");
+    _activeRevertableGenerator = new(_api.World, _loader, Logger, _terrain,
+                                     center, ServerConfig.ResourceZone);
+    ProcessRevertableGenerator();
+    return true;
+  }
+
+  private void ProcessRevertableGenerator() {
+    if (_activeRevertableGenerator != null) {
+      if (!_activeRevertableGenerator.GenerationDone) {
+        if (_activeRevertableGenerator.Generate(_revertable)) {
+          _revertable.Commit();
+        }
+      }
+      if (_activeRevertableGenerator.GenerationDone) {
+        if (_activeRevertableGenerator.Commit(_revertable)) {
+          Logger.Build("Manual haven generation done.");
+          _activeRevertableGenerator = null;
+        }
+      }
+    }
+  }
+
+  public bool UndoHaven() {
+    if (_revertable.CurrentHistoryState >= _revertable.AvailableHistoryStates) {
+      return false;
+    }
+    _revertable.ChangeHistoryState(1);
+    Logger.Build("Manual haven reverted.");
+    return true;
   }
 
   private void LoadConfigFile(ICoreServerAPI api) {
@@ -56,5 +107,11 @@ public class HavenSystem : ModSystem {
       ServerConfig = new();
       api.StoreModConfig(ServerConfig, configFile);
     }
+    ServerConfig.Resolve(Logger, api.Assets);
+  }
+
+  private void ChunksLoaded(List<IWorldChunk> list) {
+    Logger.Build("ChunksLoaded.");
+    ProcessRevertableGenerator();
   }
 }
