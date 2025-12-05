@@ -15,6 +15,7 @@ public class HavenSystem : ModSystem {
   public static string Domain { get; private set; }
   public static ILogger Logger { get; private set; }
   public ServerConfig ServerConfig { get; private set; }
+  private BlockConfig _blockConfig = null;
   public readonly CallbackScheduler Scheduler = new();
 
   private IBlockAccessorRevertable _revertable = null;
@@ -44,13 +45,17 @@ public class HavenSystem : ModSystem {
   public override void StartServerSide(ICoreServerAPI sapi) {
     base.StartServerSide(sapi);
     LoadConfigFile(sapi);
+    MatchResolver resolver = new(sapi.World, Logger);
     _revertable = sapi.World.GetBlockAccessorRevertable(true, true);
     _loader = new(sapi.Event, sapi.WorldManager, sapi.World.BlockAccessor,
                   ChunksLoaded);
-    _terrain = new(_loader, false, []);
+    _terrain =
+        new(_loader, false, _blockConfig.TerrainReplace.Resolve(resolver));
 
-    // This is normally set by GenStructures.initWorldGen, but that isn't called in flat worlds. So set the filler block directly here instead.
-    Block fillerBlock = sapi.World.BlockAccessor.GetBlock(new AssetLocation("meta-filler"));
+    // This is normally set by GenStructures.initWorldGen, but that isn't called
+    // in flat worlds. So set the filler block directly here instead.
+    Block fillerBlock =
+        sapi.World.BlockAccessor.GetBlock(new AssetLocation("meta-filler"));
     BlockSchematic.FillerBlockId = fillerBlock?.Id ?? 0;
 
     _commands = new(sapi, this);
@@ -114,6 +119,7 @@ public class HavenSystem : ModSystem {
       api.StoreModConfig(ServerConfig, configFile);
     }
     ServerConfig.Resolve(Logger, api.World);
+    _blockConfig = BlockConfig.Load(Logger, api.Assets);
   }
 
   private void ChunksLoaded(List<IWorldChunk> list) {

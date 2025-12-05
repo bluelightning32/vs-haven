@@ -1,0 +1,10 @@
+{
+  terrainReplace: {
+    include: {
+      "*:leavesbranchy*" : 1,
+      "*:bambooleaves-*" : 1,
+      "*:leaves-*" : 1,
+      "*:log-*" : 1
+    }
+  }
+}

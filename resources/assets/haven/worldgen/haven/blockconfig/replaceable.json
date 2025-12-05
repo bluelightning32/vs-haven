@@ -1,0 +1,7 @@
+{
+  terrainReplace: {
+    // Grass is 6000 replaceable
+    // Flowers are 3000 replaceable
+    includeReplaceable: 3000
+  }
+}
