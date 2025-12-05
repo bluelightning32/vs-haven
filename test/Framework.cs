@@ -33,7 +33,8 @@ public class Framework {
   public static void AssemblyInitialize(TestContext context) {
     Dictionary<AssetCategory, HashSet<string>> allow =
         new() { [AssetCategory.itemtypes] = new() { "fruit.json" },
-                [AssetCategory.blocktypes] = new() { "egg.json", "rock.json" },
+                [AssetCategory.blocktypes] =
+                    new() { "egg.json", "rock.json", "tallgrass.json" },
                 [AssetCategory.recipes] = new() {} };
     Server = ServerApiWithAssets.Create(allow);
   }
