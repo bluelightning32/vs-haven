@@ -47,7 +47,7 @@ public class HavenSystem : ModSystem {
     _revertable = sapi.World.GetBlockAccessorRevertable(true, true);
     _loader = new(sapi.Event, sapi.WorldManager, sapi.World.BlockAccessor,
                   ChunksLoaded);
-    _terrain = new(_loader, false);
+    _terrain = new(_loader, false, []);
     _commands = new(sapi, this);
   }
 

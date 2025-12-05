@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
@@ -70,10 +72,13 @@ public interface ITerrainHeightReader {
 public class TerrainHeightReader : ITerrainHeightReader {
   private readonly IChunkLoader _loader;
   private readonly bool _useWorldGenHeight = true;
+  private readonly HashSet<int> _replace;
 
-  public TerrainHeightReader(IChunkLoader loader, bool useWorldGenHeight) {
+  public TerrainHeightReader(IChunkLoader loader, bool useWorldGenHeight,
+                             HashSet<int> replace) {
     _loader = loader;
     _useWorldGenHeight = useWorldGenHeight;
+    _replace = replace;
   }
 
   public (ushort[], bool[])
@@ -83,20 +88,28 @@ public class TerrainHeightReader : ITerrainHeightReader {
       _loader.LoadChunkColumn(chunkX, chunkZ);
       return (null, null);
     }
-    ushort[] heights = _useWorldGenHeight ? chunk.WorldGenTerrainHeightMap
-                                          : chunk.RainHeightMap;
+    ushort[] heightsOriginal = _useWorldGenHeight
+                                   ? chunk.WorldGenTerrainHeightMap
+                                   : chunk.RainHeightMap;
     const int blocks = GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
     bool[] solid = new bool[blocks];
+    ushort[] heights = new ushort[blocks];
     int offset = 0;
     BlockPos pos =
         new(Dimensions.NormalWorld) { Z = chunkZ * GlobalConstants.ChunkSize };
     int xOffset = chunkX * GlobalConstants.ChunkSize;
     for (int z = 0; z < GlobalConstants.ChunkSize; ++z, ++pos.Z) {
-      for (int x = 0; x < GlobalConstants.ChunkSize; ++x) {
-        pos.X = x + xOffset;
-        pos.Y = heights[offset];
-        solid[offset] = accessor.GetBlock(pos, BlockLayersAccess.Solid).Id != 0;
-        ++offset;
+      pos.X = xOffset;
+      for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++pos.X, ++offset) {
+        pos.Y = heightsOriginal[offset];
+        Block surface = accessor.GetBlock(pos);
+        while (pos.Y > 0 && _replace.Contains(surface.Id)) {
+          --pos.Y;
+          surface = accessor.GetBlock(pos);
+        }
+        surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+        solid[offset] = surface.Id != 0;
+        heights[offset] = (ushort)pos.Y;
       }
     }
     return (heights, solid);
