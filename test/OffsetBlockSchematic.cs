@@ -399,4 +399,27 @@ public class OffsetBlockSchematic {
         box.GetJustPositions(new BlockPos(0, 0, 0)),
         copy.GetJustPositions(new BlockPos(0, 0, 0)));
   }
+
+  [TestMethod]
+  public void TransformWhilePackedCoopersreed() {
+    string path = new AssetLocation("haven:coopersreed.json")
+                      .WithPathPrefixOnce("worldgen/schematics/")
+                      .WithPathAppendixOnce(".json");
+    Real.OffsetBlockSchematic resolved =
+        Framework.Api.Assets.Get(path).ToObject<Real.OffsetBlockSchematic>();
+    Assert.IsNotNull(resolved);
+    resolved.TransformWhilePacked(Framework.Api.World, EnumOrigin.StartPos,
+                                  270);
+    foreach (BlockPos pos in resolved.GetJustPositions(
+                 new BlockPos(1000, 100, 1000))) {
+      Assert.IsGreaterThan(900, pos.X);
+      Assert.IsLessThan(1100, pos.X);
+      Assert.IsGreaterThan(50, pos.Y);
+      Assert.IsLessThan(150, pos.Y);
+      Assert.IsGreaterThan(900, pos.Z);
+      Assert.IsLessThan(1100, pos.Z);
+    }
+    resolved.UpdateOutline();
+    Assert.IsLessThan(100, resolved.Outline.MaxY);
+  }
 }

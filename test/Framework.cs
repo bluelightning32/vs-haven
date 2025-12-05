@@ -34,7 +34,8 @@ public class Framework {
     Dictionary<AssetCategory, HashSet<string>> allow =
         new() { [AssetCategory.itemtypes] = new() { "fruit.json" },
                 [AssetCategory.blocktypes] =
-                    new() { "egg.json", "rock.json", "tallgrass.json" },
+                    new() { "egg.json", "rock.json", "tallgrass.json",
+                            "water.json", "soil.json", "meta.json" },
                 [AssetCategory.recipes] = new() {} };
     Server = ServerApiWithAssets.Create(allow);
   }
