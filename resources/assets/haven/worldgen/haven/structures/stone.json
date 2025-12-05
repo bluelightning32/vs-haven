@@ -3,7 +3,6 @@
   schematics: {
     "granite": {
       schematic: "granite",
-      offsetY: -1,
     },
   },
   count: {
