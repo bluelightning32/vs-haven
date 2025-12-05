@@ -151,4 +151,32 @@ public class TerrainHeightReader {
     Assert.AreEqual(1, ((ITerrainHeightReader)reader)
                            .IsSolid(_server.World.BlockAccessor, new(1, 0)));
   }
+
+  [TestMethod]
+  public void WaterSurface() {
+    ICoreServerAPI sapi = (ICoreServerAPI)_server.Api;
+    Block water = sapi.World.GetBlock(new AssetLocation("game:water-still-7"));
+    Block granite = sapi.World.GetBlock(new AssetLocation("game:rock-granite"));
+
+    // Ensure the chunk is loaded.
+    sapi.WorldManager.LoadChunkColumnPriority(0, 0);
+    _server.LoadChunksInline();
+    IServerMapChunk chunk = sapi.WorldManager.GetMapChunk(0, 0);
+    Assert.IsNotNull(chunk);
+
+    _server.World.BlockAccessor.SetBlock(
+        granite.BlockId, new BlockPos(0, 0, 0, Dimensions.NormalWorld));
+    _server.World.BlockAccessor.SetBlock(
+        water.BlockId, new BlockPos(0, 1, 0, Dimensions.NormalWorld));
+    _server.World.BlockAccessor.SetBlock(
+        water.BlockId, new BlockPos(0, 2, 0, Dimensions.NormalWorld));
+    chunk.RainHeightMap[0] = 2;
+
+    FakeChunkLoader loader = new();
+    Real.TerrainHeightReader reader = new(loader, false, [], []);
+    Assert.AreEqual(2, ((ITerrainHeightReader)reader)
+                           .GetHeight(_server.World.BlockAccessor, new(0, 0)));
+    Assert.AreEqual(0, ((ITerrainHeightReader)reader)
+                           .IsSolid(_server.World.BlockAccessor, new(0, 0)));
+  }
 }

@@ -1,0 +1,14 @@
+{
+  terrainReplace: {
+    exclude: {
+      // Water is added to the replace set at priority 0 by replaceable.json,
+      // because it has a replaceability of 9500. However, it should be
+      // excluded from the replace set, otherwise the schematic placer will
+      // try to place the structure in the water. With the water removed from
+      // the replace set, the schematic placer will avoid the water because
+      // it is non-solid (because it is in the fluid layer instead of the solid
+      // layer).
+      "game:water-*" : 1
+    }
+  }
+}
