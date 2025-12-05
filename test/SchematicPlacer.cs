@@ -5,6 +5,8 @@ using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 
+using static Haven.ISchematicPlacerSupervisor;
+
 using Real = Haven;
 
 namespace Haven.Test;
@@ -99,12 +101,13 @@ public class SchematicPlacer {
     Real.SchematicPlacer placer = null;
     BlockPos pos =
         new(3 * GlobalConstants.ChunkSize, 101, 3 * GlobalConstants.ChunkSize);
-    bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
+    LocationResult FinalizeLocation(
+        IBlockAccessor accessor, Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsFalse(locationSelected);
       locationSelected = true;
       Assert.AreEqual(pos, pos2);
       Assert.AreEqual(placer, placer2);
-      return true;
+      return LocationResult.Accepted;
     }
     supervisor.TryFinalizeLocationMock = FinalizeLocation;
     placer = CreateGraniteBox(1, 1, 1, 0, pos, supervisor);
@@ -121,13 +124,49 @@ public class SchematicPlacer {
   }
 
   [TestMethod]
+  public void RetriesGoodStructurePosition() {
+    MockSchematicPlacerSupervisor supervisor = new();
+    int finalizeLocationCalls = 0;
+    Real.SchematicPlacer placer = null;
+    BlockPos pos =
+        new(3 * GlobalConstants.ChunkSize, 101, 3 * GlobalConstants.ChunkSize);
+    LocationResult FinalizeLocation(
+        IBlockAccessor accessor, Real.SchematicPlacer placer2, BlockPos pos2) {
+      Assert.IsLessThan(2, finalizeLocationCalls);
+      ++finalizeLocationCalls;
+      Assert.AreEqual(placer, placer2);
+      Assert.AreEqual(pos, pos2);
+      if (finalizeLocationCalls == 2) {
+        return LocationResult.Accepted;
+      }
+      return LocationResult.TryAgain;
+    }
+    supervisor.TryFinalizeLocationMock = FinalizeLocation;
+    placer = CreateGraniteBox(1, 1, 1, 0, pos, supervisor);
+
+    // Mark the chunk as loaded.
+    Framework.Api.WorldManager.LoadChunkColumnPriority(3, 3);
+    Framework.Server.LoadChunksInline();
+    supervisor.FakeTerrain.FillChunk(3, 3, 100, 0, 0);
+    IBulkBlockAccessor accessor =
+        Framework.Server.GetBlockAccessorBulkUpdate(false, false);
+
+    while (!placer.Generate(accessor)) {
+    }
+    // Call it one more time to verify that it reuses the last result.
+    Assert.IsTrue(placer.Generate(accessor));
+    Assert.AreEqual(2, finalizeLocationCalls);
+  }
+
+  [TestMethod]
   public void FindsGoodStructurePosition() {
     MockSchematicPlacerSupervisor supervisor = new();
     bool locationSelected = false;
     Real.SchematicPlacer placer = null;
     BlockPos pos =
         new(3 * GlobalConstants.ChunkSize, 100, 3 * GlobalConstants.ChunkSize);
-    bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
+    LocationResult FinalizeLocation(
+        IBlockAccessor accessor, Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsFalse(locationSelected);
       locationSelected = true;
       Assert.AreNotEqual(pos, pos2);
@@ -135,7 +174,7 @@ public class SchematicPlacer {
       Assert.IsLessThan(GlobalConstants.ChunkSize * 2,
                         pos2.ManhattenDistance(pos));
       Assert.AreEqual(placer, placer2);
-      return true;
+      return LocationResult.Accepted;
     }
     supervisor.TryFinalizeLocationMock = FinalizeLocation;
     placer = CreateGraniteBox(2, 1, 2, 0, pos, supervisor);
@@ -164,7 +203,8 @@ public class SchematicPlacer {
     Real.SchematicPlacer placer = null;
     BlockPos pos =
         new(3 * GlobalConstants.ChunkSize, 101, 3 * GlobalConstants.ChunkSize);
-    bool FinalizeLocation(Real.SchematicPlacer placer2, BlockPos pos2) {
+    LocationResult FinalizeLocation(
+        IBlockAccessor accessor, Real.SchematicPlacer placer2, BlockPos pos2) {
       Assert.IsLessThan(2, finalizeLocationCalls);
       ++finalizeLocationCalls;
       Assert.AreEqual(placer, placer2);
@@ -172,9 +212,9 @@ public class SchematicPlacer {
         Assert.AreNotEqual(pos, pos2);
         Assert.IsLessThan(GlobalConstants.ChunkSize * 2,
                           pos2.ManhattenDistance(pos));
-        return true;
+        return LocationResult.Accepted;
       }
-      return false;
+      return LocationResult.Rejected;
     }
     supervisor.TryFinalizeLocationMock = FinalizeLocation;
     placer = CreateGraniteBox(1, 1, 1, 0, pos, supervisor);

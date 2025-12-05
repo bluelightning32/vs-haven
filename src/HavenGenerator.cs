@@ -3,6 +3,8 @@ using ProtoBuf;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
+using static Haven.ISchematicPlacerSupervisor;
+
 namespace Haven;
 
 /// <summary>
@@ -49,20 +51,22 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         config.MaxRoughnessArea, config.MinLandRatio);
   }
 
-  public bool TryFinalizeLocation(SchematicPlacer placer, BlockPos offset) {
+  public LocationResult TryFinalizeLocation(IBlockAccessor accessor,
+                                            SchematicPlacer placer,
+                                            BlockPos offset) {
     foreach (SchematicPlacer other in _resourceZone.Structures) {
       if (!other.IsOffsetFinal) {
-        // This also excludes checking placer for intersections against itself.
+        // This also excludes placer from checking itself for intersections.
         continue;
       }
       if (placer.Schematic.Intersects(offset, other.Schematic, other.Offset) !=
           null) {
-        return false;
+        return LocationResult.Rejected;
       }
     }
     _resourceZone.ExpandRadiusIfNecessary(offset, placer.Schematic);
     // TODO: update haven intersection entries.
-    return true;
+    return LocationResult.Accepted;
   }
 
   public bool Failed => _centerLocator.Failed;

@@ -6,9 +6,28 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 
+using static Haven.ISchematicPlacerSupervisor;
+
 namespace Haven;
 
 public interface ISchematicPlacerSupervisor {
+  enum LocationResult {
+    /// <summary>
+    /// This location was rejected. The placer should try a different location
+    /// next time.
+    /// </summary>
+    Rejected,
+    /// <summary>
+    /// This location was accepted. The placer may start placing the blocks.
+    /// </summary>
+    Accepted,
+    /// <summary>
+    /// The supervisor cannot currently tell if this location is acceptable due
+    /// to chunks being unavailable. The placer should retry this same location
+    /// on the next Generate cycle.
+    /// </summary>
+    TryAgain
+  }
   /// <summary>
   /// Called when the placer is done surveying the terrain and tries to pick its
   /// final location. placer.Offset will only be updated after this returns.
@@ -17,7 +36,8 @@ public interface ISchematicPlacerSupervisor {
   /// <param name="offset"></param>
   /// <returns>true if the location was accepted, or false if it was rejected
   /// due to an intersection with another placer</returns>
-  bool TryFinalizeLocation(SchematicPlacer placer, BlockPos offset);
+  LocationResult TryFinalizeLocation(IBlockAccessor accessor,
+                                     SchematicPlacer placer, BlockPos offset);
   public TerrainSurvey Terrain { get; }
   public IChunkLoader Loader { get; }
 
@@ -90,10 +110,17 @@ public class SchematicPlacer : IWorldGenerator {
       }
       if (y >= 0) {
         BlockPos updatedOffset = new(testPos.X, y, testPos.Y);
-        if (_supervisor.TryFinalizeLocation(this, updatedOffset)) {
+        LocationResult result =
+            _supervisor.TryFinalizeLocation(accessor, this, updatedOffset);
+        switch (result) {
+        case LocationResult.Rejected:
+          break;
+        case LocationResult.Accepted:
           Offset = updatedOffset;
           _locationSearch = null;
           return true;
+        case LocationResult.TryAgain:
+          return false;
         }
       }
       _locationSearch.Next();

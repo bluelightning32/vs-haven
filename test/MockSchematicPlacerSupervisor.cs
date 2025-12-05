@@ -1,6 +1,8 @@
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
+using static Haven.ISchematicPlacerSupervisor;
+
 using Real = Haven;
 
 namespace Haven.Test;
@@ -16,9 +18,8 @@ public class MockSchematicPlacerSupervisor : ISchematicPlacerSupervisor {
 
   public FakeChunkLoader FakeLoader = new();
   public MemoryTerrainHeightReader FakeTerrain = new();
-  public System
-      .Func<Real.SchematicPlacer, BlockPos, bool> TryFinalizeLocationMock =
-      null;
+  public System.Func<IBlockAccessor, Real.SchematicPlacer, BlockPos,
+                     LocationResult> TryFinalizeLocationMock = null;
 
   public MockSchematicPlacerSupervisor() {
     WorldForResolve = Framework.Server;
@@ -26,11 +27,12 @@ public class MockSchematicPlacerSupervisor : ISchematicPlacerSupervisor {
     Terrain = new(FakeTerrain);
   }
 
-  public bool TryFinalizeLocation(Real.SchematicPlacer placer,
-                                  BlockPos offset) {
+  public LocationResult TryFinalizeLocation(IBlockAccessor accessor,
+                                            Real.SchematicPlacer placer,
+                                            BlockPos offset) {
     if (TryFinalizeLocationMock != null) {
-      return TryFinalizeLocationMock(placer, offset);
+      return TryFinalizeLocationMock(accessor, placer, offset);
     }
-    return true;
+    return LocationResult.Accepted;
   }
 }
