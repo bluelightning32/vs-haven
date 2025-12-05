@@ -252,6 +252,16 @@ public class OffsetBlockSchematic : BlockSchematic {
         incomplete = true;
         continue;
       }
+      int solid =
+          terrain.IsSolid(accessor, probe.X + startPos.X, probe.Z + startPos.Y);
+      if (solid == -1) {
+        incomplete = true;
+        continue;
+      }
+      if (solid == 0) {
+        // The probe failed.
+        return -2;
+      }
       yTerrainSum += y;
       yMax = int.Min(yMax, y - probe.YMin);
       yMin = int.Max(yMin, y - probe.YEnd);

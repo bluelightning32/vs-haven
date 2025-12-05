@@ -50,11 +50,13 @@ public class MemoryTerrainHeightReader : ITerrainHeightReader {
     }
   }
 
-  public void SetHeight(int x, int z, ushort height) {
-    (ushort[] heights, bool[] solid) = GetOrCreateChunkData(
+  public void SetHeight(int x, int z, ushort height, bool solid = true) {
+    (ushort[] heights, bool[] solids) = GetOrCreateChunkData(
         x / GlobalConstants.ChunkSize, z / GlobalConstants.ChunkSize);
     heights[x % GlobalConstants.ChunkSize +
             z % GlobalConstants.ChunkSize * GlobalConstants.ChunkSize] = height;
+    solids[x % GlobalConstants.ChunkSize +
+           z % GlobalConstants.ChunkSize * GlobalConstants.ChunkSize] = solid;
   }
 
   public void SetSolid(int x, int z, bool solid) {

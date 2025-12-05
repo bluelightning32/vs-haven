@@ -115,6 +115,10 @@ public class ChunkColumnSurvey {
     return Heights[relZ * GlobalConstants.ChunkSize + relX];
   }
 
+  public bool IsSolid(int relX, int relZ) {
+    return Solid[relZ * GlobalConstants.ChunkSize + relX];
+  }
+
   /// <summary>
   /// Create a ChunkSurvey
   /// </summary>

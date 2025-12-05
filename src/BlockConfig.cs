@@ -23,9 +23,18 @@ public class BlockConfig {
   [JsonProperty]
   public BlockSet ResourceZoneClear = new();
 
+  /// <summary>
+  /// Avoid placing structures on top of these blocks. Internally if one of
+  /// these blocks is found on the surface, then that position is marked as
+  /// non-solid.
+  /// </summary>
+  [JsonProperty]
+  public BlockSet TerrainAvoid = new();
+
   public void Merge(BlockConfig other) {
     TerrainReplace.Merge(other.TerrainReplace);
     ResourceZoneClear.Merge(other.ResourceZoneClear);
+    TerrainAvoid.Merge(other.TerrainAvoid);
   }
 
   public static BlockConfig Load(ILogger logger, IAssetManager assetManager) {

@@ -50,7 +50,8 @@ public class HavenSystem : ModSystem {
     _loader = new(sapi.Event, sapi.WorldManager, sapi.World.BlockAccessor,
                   ChunksLoaded);
     _terrain =
-        new(_loader, false, _blockConfig.TerrainReplace.Resolve(resolver));
+        new(_loader, false, _blockConfig.TerrainReplace.Resolve(resolver),
+            _blockConfig.TerrainAvoid.Resolve(resolver));
 
     // This is normally set by GenStructures.initWorldGen, but that isn't called
     // in flat worlds. So set the filler block directly here instead.

@@ -1,0 +1,10 @@
+{
+  terrainAvoid: {
+    // Do not treat berry bushes as solid ground. Avoid clearing them from the resource zone in order to let the zone look more natural.
+    include: {
+      "haven:berrybush-*" : 1,
+      "*:smallberrybush-*" : 1,
+      "*:bigberrybush-*" : 1
+    }
+  }
+}

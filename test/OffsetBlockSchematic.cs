@@ -273,6 +273,26 @@ public class OffsetBlockSchematic {
   }
 
   [TestMethod]
+  public void ProbeTerrainFailsNonsolid() {
+    Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
+    box.Probes = [new() {
+      X = 0,
+      Z = 0,
+      YMin = -100,
+      YEnd = 100,
+    }];
+
+    MemoryTerrainHeightReader reader = new();
+    reader.SetHeight(0, 0, 2, false);
+    reader.SetHeight(1, 0, 2, true);
+    Real.TerrainSurvey survey = new(reader);
+    // Fails on the non-solid block.
+    Assert.AreEqual(-2, box.ProbeTerrain(survey, null, new(0, 0)));
+    // Passes on the solid block.
+    Assert.AreEqual(3, box.ProbeTerrain(survey, null, new(1, 0)));
+  }
+
+  [TestMethod]
   public void ProbeTerrainRestrictiveProbeWinsHigh() {
     Real.OffsetBlockSchematic box = CreateGraniteBox(1, 1, 1, 0);
     box.Probes = [

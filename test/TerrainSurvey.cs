@@ -465,6 +465,17 @@ public class TerrainSurvey {
   }
 
   [TestMethod]
+  public void IsSolid() {
+    MemoryTerrainHeightReader reader = new();
+    reader.FillChunk(0, 0, 0, 0, 0, false);
+    reader.FillChunk(1, 0, 0, 0, 0, true);
+
+    Real.TerrainSurvey survey = new(reader);
+    Assert.AreEqual(0, survey.IsSolid(null, 0, 0));
+    Assert.AreEqual(1, survey.IsSolid(null, GlobalConstants.ChunkSize, 0));
+  }
+
+  [TestMethod]
   public void Serialization() {
     MemoryTerrainHeightReader reader = new();
     // Fill nearby chunks

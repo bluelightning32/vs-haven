@@ -73,12 +73,16 @@ public class TerrainHeightReader : ITerrainHeightReader {
   private readonly IChunkLoader _loader;
   private readonly bool _useWorldGenHeight = true;
   private readonly HashSet<int> _replace;
+  private readonly HashSet<int> _nonsolid;
 
   public TerrainHeightReader(IChunkLoader loader, bool useWorldGenHeight,
-                             HashSet<int> replace) {
+                             HashSet<int> replace, HashSet<int> nonsolid) {
     _loader = loader;
     _useWorldGenHeight = useWorldGenHeight;
     _replace = replace;
+    _nonsolid = nonsolid;
+    _nonsolid ??= [];
+    _nonsolid.Add(0);
   }
 
   public (ushort[], bool[])
@@ -108,7 +112,7 @@ public class TerrainHeightReader : ITerrainHeightReader {
           surface = accessor.GetBlock(pos);
         }
         surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
-        solid[offset] = surface.Id != 0;
+        solid[offset] = !_nonsolid.Contains(surface.Id);
         heights[offset] = (ushort)pos.Y;
       }
     }

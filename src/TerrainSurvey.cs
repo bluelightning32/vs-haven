@@ -45,6 +45,27 @@ public class TerrainSurvey {
                             blockZ % GlobalConstants.ChunkSize);
   }
 
+  /// <summary>
+  /// Determine whether the surface is solid
+  /// </summary>
+  /// <param name="accessor">An accessor for reading map chunks</param>
+  /// <param name="blockX"></param>
+  /// <param name="blockZ"></param>
+  /// <returns>1 if the block is solid, 0 if it is not, or -1 if the chunk is
+  /// unloaded</returns>
+  public int IsSolid(IBlockAccessor accessor, int blockX, int blockZ) {
+    int chunkX = blockX / GlobalConstants.ChunkSize;
+    int chunkZ = blockZ / GlobalConstants.ChunkSize;
+    ChunkColumnSurvey column = GetColumn(accessor, chunkX, chunkZ);
+    if (column == null) {
+      return -1;
+    }
+    return column.IsSolid(blockX % GlobalConstants.ChunkSize,
+                          blockZ % GlobalConstants.ChunkSize)
+               ? 1
+               : 0;
+  }
+
   public ChunkColumnSurvey GetColumn(IBlockAccessor accessor, int chunkX,
                                      int chunkZ) {
     return GetColumn(accessor, new Vec2i(chunkX, chunkZ));
