@@ -26,7 +26,7 @@ public class ResourceZoneConfig {
     _worldForResolve = worldForResolve;
     List<IAsset> structureAssets =
         _worldForResolve.AssetManager.GetManyInCategory("worldgen",
-                                                        "havenstructures/");
+                                                        "haven/structures/");
     _structures = [];
     foreach (IAsset asset in structureAssets) {
       try {

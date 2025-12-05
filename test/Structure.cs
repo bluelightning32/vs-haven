@@ -11,7 +11,7 @@ namespace Haven.Test;
 public class Structure {
   public static Real.Structure Load(string name) {
     AssetLocation location = AssetLocation.Create(name, "haven");
-    location.WithPathPrefixOnce("worldgen/havenstructures/")
+    location.WithPathPrefixOnce("worldgen/haven/structures/")
         .WithPathAppendixOnce(".json");
     return Framework.Server.AssetManager.Get<Real.Structure>(location);
   }
