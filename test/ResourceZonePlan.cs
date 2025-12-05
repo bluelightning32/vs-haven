@@ -168,7 +168,11 @@ public class ResourceZonePlan {
   [TestMethod]
   public void HasStructures() {
     ResourceZoneConfig config = new();
-    config.Resolve(Framework.Api.Logger, Framework.Api.World);
+    Real.MatchResolver resolver =
+        new(Framework.Api.World, Framework.Api.Logger);
+    BlockConfig blockConfig = new();
+    config.Resolve(Framework.Api.Logger, Framework.Api.World, resolver,
+                   blockConfig);
     BlockPos center = new(10000, 100, 10000);
     NormalRandom rand = new(0);
     Real.ResourceZonePlan plan = new(null, config, center, rand);

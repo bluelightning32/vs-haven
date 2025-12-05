@@ -44,8 +44,8 @@ public class HavenSystem : ModSystem {
 
   public override void StartServerSide(ICoreServerAPI sapi) {
     base.StartServerSide(sapi);
-    LoadConfigFile(sapi);
     MatchResolver resolver = new(sapi.World, Logger);
+    LoadConfigFile(sapi, resolver);
     _revertable = sapi.World.GetBlockAccessorRevertable(true, true);
     _loader = new(sapi.Event, sapi.WorldManager, sapi.World.BlockAccessor,
                   ChunksLoaded);
@@ -105,7 +105,7 @@ public class HavenSystem : ModSystem {
     return true;
   }
 
-  private void LoadConfigFile(ICoreServerAPI api) {
+  private void LoadConfigFile(ICoreServerAPI api, MatchResolver resolver) {
     string configFile = $"{Domain}.json";
     try {
       ServerConfig = api.LoadModConfig<ServerConfig>(configFile);
@@ -118,8 +118,9 @@ public class HavenSystem : ModSystem {
       ServerConfig = new();
       api.StoreModConfig(ServerConfig, configFile);
     }
-    ServerConfig.Resolve(Logger, api.World);
     _blockConfig = BlockConfig.Load(Logger, api.Assets);
+
+    ServerConfig.Resolve(Logger, api.World, resolver, _blockConfig);
   }
 
   private void ChunksLoaded(List<IWorldChunk> list) {

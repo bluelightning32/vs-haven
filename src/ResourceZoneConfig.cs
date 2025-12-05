@@ -19,10 +19,12 @@ public class ResourceZoneConfig {
 
   private IWorldAccessor _worldForResolve = null;
   private ICollection<Structure> _structures = null;
+  public HashSet<int> ClearBlocks { get; private set; }
 
   public ResourceZoneConfig() {}
 
-  public void Resolve(ILogger logger, IWorldAccessor worldForResolve) {
+  public void Resolve(ILogger logger, IWorldAccessor worldForResolve,
+                      MatchResolver resolver, BlockConfig config) {
     _worldForResolve = worldForResolve;
     List<IAsset> structureAssets =
         _worldForResolve.AssetManager.GetManyInCategory("worldgen",
@@ -37,6 +39,7 @@ public class ResourceZoneConfig {
       }
     }
     logger.Event($"Loaded {_structures.Count} haven structures.");
+    ClearBlocks = config.ResourceZoneClear.Resolve(resolver);
   }
 
   public IEnumerable<OffsetBlockSchematic> SelectStructures(IRandom rand) {

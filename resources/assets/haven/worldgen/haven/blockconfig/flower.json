@@ -1,0 +1,13 @@
+{
+  terrainReplace: {
+    include: {
+      "*:flower-*" : 1
+    }
+  },
+  resourceZoneClear: {
+    include: {
+      // Clear the flowers in order to make the resource zone more recognizable on the map
+      "*:flower-*" : 1
+    }
+  }
+}

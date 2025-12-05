@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using ProtoBuf;
 
 using Vintagestory.API.Common;
@@ -22,6 +24,9 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
   [field:ProtoMember(3)]
   public TerrainSurvey Terrain { get; }
 
+  [ProtoMember(4)]
+  private DiskPruner _pruneResourceZone = null;
+
   public IChunkLoader Loader { get; private set; }
 
   private ILogger _logger;
@@ -34,6 +39,8 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
   public bool GenerationDone { get; private set; }
 
   public BlockPos Center => _centerLocator.Center;
+
+  private HashSet<int> _clearBlocks = null;
 
   public HavenGenerator(IWorldAccessor worldForResolve, IChunkLoader loader,
                         ILogger logger, ITerrainHeightReader reader,
@@ -49,6 +56,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         logger, Terrain, new(_resourceZone.Center.X, _resourceZone.Center.Z),
         (int)_resourceZone.Radius, config.MaxRoughnessPerimeter,
         config.MaxRoughnessArea, config.MinLandRatio);
+    _clearBlocks = config.ClearBlocks;
   }
 
   public LocationResult TryFinalizeLocation(IBlockAccessor accessor,
@@ -64,7 +72,12 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         return LocationResult.Rejected;
       }
     }
-    _resourceZone.ExpandRadiusIfNecessary(offset, placer.Schematic);
+    if (_resourceZone.ExpandRadiusIfNecessary(offset, placer.Schematic)) {
+      _pruneResourceZone.Expand((int)_resourceZone.Radius);
+      if (!_pruneResourceZone.Generate(accessor)) {
+        return LocationResult.TryAgain;
+      }
+    }
     // TODO: update haven intersection entries.
     return LocationResult.Accepted;
   }
@@ -87,6 +100,13 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
       }
       _resourceZone.Center = _centerLocator.Center;
       // TODO: update haven intersection entries.
+      _pruneResourceZone =
+          new(Loader, Terrain, _clearBlocks,
+              new Vec2i(_resourceZone.Center.X, _resourceZone.Center.Z),
+              (int)_resourceZone.Radius);
+    }
+    if (!_pruneResourceZone.Generate(accessor)) {
+      return false;
     }
     bool structuresPlaced = true;
     foreach (SchematicPlacer placer in _resourceZone.Structures) {
@@ -113,11 +133,16 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
   }
 
   public void Restore(IWorldAccessor worldForResolve, IChunkLoader loader,
-                      ILogger logger, ITerrainHeightReader reader) {
+                      ILogger logger, ITerrainHeightReader reader,
+                      ResourceZoneConfig config) {
     WorldForResolve = worldForResolve;
     Loader = loader;
     _logger = logger;
+    _clearBlocks = config.ClearBlocks;
     Terrain.Restore(reader);
     _centerLocator.Restore(logger, Terrain);
+    if (_pruneResourceZone != null) {
+      _pruneResourceZone.Restore(Loader, Terrain, _clearBlocks);
+    }
   }
 }
