@@ -2,13 +2,13 @@
 	"type": "code",
 	"name": "Haven",
 	"modid": "haven",
-	"version": "0.0.1",
+	"version": "0.2.0",
 	
 	"description" : "Safe haven where the basic player needs are met until they are ready to venture forth.",
 	"website": "https://github.com/bluelightning32/vs-haven",
 	"authors": [ "bluelightning32" ],
 	
 	"dependencies": {
-		"game": "1.21.0-rc.3"
+		"game": "1.21.5"
 	}
 }

@@ -26,3 +26,9 @@ This will produce a zip file in a subfolder of `bin/Debug`.
 ```
 dotnet build -c Debug
 ```
+
+### Run unit tests
+
+```
+dotnet test -c Debug --logger:"console;verbosity=detailed"
+```
