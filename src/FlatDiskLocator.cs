@@ -15,9 +15,10 @@ interface IWorldGenerator {
   /// generator asks to load more chunks through other interfaces). Any extra
   /// calls after the generator is complete are no-ops.
   ///
-  /// This method is thread safe. It may be called from the main thread with the
-  /// default accessor and from the world generation thread with the world
-  /// generation accessor.
+  /// On any given generator instance, the caller is responsible for only
+  /// calling this from one thread at a time. It may be called from the main
+  /// thread with the default accessor and from the world generation thread with
+  /// the world generation accessor.
   /// </summary>
   /// <param name="accessor"></param>
   /// <returns>
