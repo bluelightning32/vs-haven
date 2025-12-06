@@ -6,7 +6,8 @@
       "*:bambooleaves-*" : 1,
       "*:leaves-*" : 1,
       "*:log-*" : 1,
-      "haven:branches-*": 1
+      "haven:branches-*": 1,
+      "game:wildvine-*" : 1
     }
   },
   resourceZoneClear: {
@@ -16,7 +17,9 @@
       "*:bambooleaves-*" : 1,
       "*:leaves-*" : 1,
       "*:log-*" : 1,
-      "haven:branches-*": 1
+      "haven:branches-*": 1,
+      // Clear the vines so that they are not left hanging after the trees are removed.
+      "game:wildvine-*" : 1
     }
   }
 }
