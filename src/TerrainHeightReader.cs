@@ -88,7 +88,13 @@ public class TerrainHeightReader : ITerrainHeightReader {
   public (ushort[], bool[])
       GetHeightsAndSolid(IBlockAccessor accessor, int chunkX, int chunkZ) {
     IMapChunk chunk = accessor.GetMapChunk(chunkX, chunkZ);
-    if (chunk == null) {
+    // The lakes need to be generated first, because they signficantly change
+    // the surface height. Lakes are filled in during the TerrainFeatures pass.
+    // For chunks within the TerrainFeatures pass, it is up to the caller to
+    // execute the terrain reader sufficiently late in the pass.
+    if (chunk == null ||
+        chunk.CurrentPass <
+            Vintagestory.API.Server.EnumWorldGenPass.TerrainFeatures) {
       _loader.LoadChunkColumn(chunkX, chunkZ);
       return (null, null);
     }
