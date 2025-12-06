@@ -42,6 +42,8 @@ public interface ISchematicPlacerSupervisor {
   public IChunkLoader Loader { get; }
 
   public IWorldAccessor WorldForResolve { get; }
+
+  public ILogger Logger { get; }
 }
 
 [ProtoContract]
@@ -124,6 +126,10 @@ public class SchematicPlacer : IWorldGenerator {
         }
       }
       _locationSearch.Next();
+      if (_locationSearch.Index % 20 == 0) {
+        _supervisor.Logger.Warning(
+            $"Schematic placement attempted {_locationSearch.Index} times.");
+      }
     }
   }
 

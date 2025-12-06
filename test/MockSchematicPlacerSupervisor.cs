@@ -15,6 +15,7 @@ public class MockSchematicPlacerSupervisor : ISchematicPlacerSupervisor {
   public Real.TerrainSurvey Terrain { get; set; }
   public IChunkLoader Loader { get; set; }
   public IWorldAccessor WorldForResolve { get; set; }
+  public ILogger Logger { get; set; }
 
   public FakeChunkLoader FakeLoader = new();
   public MemoryTerrainHeightReader FakeTerrain = new();

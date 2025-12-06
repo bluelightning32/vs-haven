@@ -200,16 +200,30 @@ public class OffsetBlockSchematic {
   }
 
   [TestMethod]
-  public void AutoConfigureProbesOnlySurface0YOffset() {
+  public void AutoConfigureProbesTop() {
     Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, 0);
     top.AutoConfigureProbes(Framework.Api.World);
-    CollectionAssert.AreEquivalent(
-        new TerrainProbe[] { new() { X = 1, Z = 1, YMin = -1, YEnd = 2 } },
-        top.Probes);
+    (int, int)[] corners = [
+      new(0, 0),
+      new(2, 0),
+      new(0, 2),
+      new(2, 2),
+    ];
+    List<TerrainProbe> expected = [];
+    foreach ((int x, int z) in corners) {
+      expected.Add(new() {
+        X = x,
+        Z = z,
+        YMin = int.MinValue,
+        YEnd = 2,
+      });
+    }
+    expected.Add(new() { X = 1, Z = 1, YMin = -1, YEnd = 2 });
+    CollectionAssert.AreEquivalent(expected, top.Probes);
   }
 
   [TestMethod]
-  public void AutoConfigureProbesOnlySurfaceNeg1YOffset() {
+  public void AutoConfigureProbesTopNeg1YOffset() {
     Real.OffsetBlockSchematic top = CreateGraniteTop(1, 1, 1, -1);
     top.AutoConfigureProbes(Framework.Api.World);
     (int, int)[] expectedPositions = [
@@ -386,6 +400,21 @@ public class OffsetBlockSchematic {
     // The surface block is at y=100. The granite box should be placed on top of
     // it at y=101.
     Assert.AreEqual(101, box.ProbeTerrain(survey, null, new(0, 0)));
+  }
+
+  [TestMethod]
+  public void ProbeTerrainTopSitsOnTop() {
+    Real.OffsetBlockSchematic box = CreateGraniteTop(1, 1, 1, 0);
+    box.AutoConfigureProbes(Framework.Api.World);
+    Assert.AreEqual(int.MinValue, box.Probes[0].YMin);
+    Assert.AreEqual(2, box.Probes[0].YEnd);
+
+    MemoryTerrainHeightReader reader = new();
+    reader.FillChunk(0, 0, 100, 0, 0);
+    Real.TerrainSurvey survey = new(reader);
+    // The surface block is at y=100. The granite top should be placed on top of
+    // it at y=101.
+    Assert.AreEqual(101, box.ProbeTerrain(survey, null, new(1, 1)));
   }
 
   [TestMethod]

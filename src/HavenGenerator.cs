@@ -30,7 +30,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
 
   public IChunkLoader Loader { get; private set; }
 
-  private ILogger _logger;
+  public ILogger Logger { get; private set; }
 
   public IWorldAccessor WorldForResolve { get; private set; }
 
@@ -48,7 +48,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
                         BlockPos center, ResourceZoneConfig config) {
     WorldForResolve = worldForResolve;
     Loader = loader;
-    _logger = logger;
+    Logger = logger;
     LCGRandom rand = new(WorldForResolve.Seed);
     rand.InitPositionSeed(center.X, center.Y, center.Z);
     _resourceZone = new(this, config, center, rand);
@@ -94,7 +94,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         return false;
       }
       if (_centerLocator.Failed) {
-        _logger.Error(
+        Logger.Error(
             $"Failed to find a suitable haven location near {_resourceZone.Center}");
         GenerationDone = true;
         return true;
@@ -138,7 +138,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
                       ResourceZoneConfig config) {
     WorldForResolve = worldForResolve;
     Loader = loader;
-    _logger = logger;
+    Logger = logger;
     _clearBlocks = config.ClearBlocks;
     Terrain.Restore(reader);
     _centerLocator.Restore(logger, Terrain);

@@ -71,12 +71,60 @@ public class OffsetBlockSchematic : BlockSchematic {
     return positions;
   }
 
-  private int GetProbeYMax(HashSet<BlockPos> probeSolid, int x, int z) {
-    int y = -OffsetY;
-    while (probeSolid.Contains(new(x, y, z))) {
-      ++y;
+  private int GetProbeYMax(HashSet<BlockPos> probeSolid, int x, int yStart,
+                           int z) {
+    yStart -= OffsetY;
+    while (probeSolid.Contains(new(x, yStart, z))) {
+      ++yStart;
     }
-    return y + OffsetY;
+    return yStart + OffsetY;
+  }
+
+  private TerrainProbe CreateProbeAtXZ(HashSet<BlockPos> probeSolid, int x,
+                                       int yEnd, int z, ref bool aboveSurface) {
+    if (yEnd == int.MaxValue) {
+      Cuboidi columnBox = Outline.GetBoundingBoxForIntersection(
+          new Cuboidi(x, 0, z, x + 1, int.MaxValue, z + 1));
+      if (columnBox.Y1 > int.Abs(OffsetY)) {
+        aboveSurface = true;
+        return new() { X = x, Z = z, YMin = int.MinValue,
+                       YEnd = GetProbeYMax(probeSolid, x, columnBox.Y1, z) };
+      }
+    }
+    return new() { X = x, Z = z, YMin = int.Min(-1, OffsetY - 1),
+                   YEnd = GetProbeYMax(probeSolid, x, 0, z) };
+  }
+
+  private void AddNorthSouthProbes(HashSet<BlockPos> probeSolid, int x,
+                                   int yEnd, HashSet<TerrainProbe> probes,
+                                   ref bool aboveSurface) {
+    Cuboidi rowBox = Outline.GetBoundingBoxForIntersection(
+        new Cuboidi(x, 0, 0, x + 1, yEnd, int.MaxValue));
+    if (rowBox.Z1 >= rowBox.Z2) {
+      return;
+    }
+    TerrainProbe north =
+        CreateProbeAtXZ(probeSolid, x, yEnd, rowBox.Z1, ref aboveSurface);
+    probes.Add(north);
+    TerrainProbe south =
+        CreateProbeAtXZ(probeSolid, x, yEnd, rowBox.Z2 - 1, ref aboveSurface);
+    probes.Add(south);
+  }
+
+  private void AddWestEastProbes(HashSet<BlockPos> probeSolid, int z, int yEnd,
+                                 HashSet<TerrainProbe> probes,
+                                 ref bool aboveSurface) {
+    Cuboidi rowBox = Outline.GetBoundingBoxForIntersection(
+        new Cuboidi(0, 0, z, int.MaxValue, yEnd, z + 1));
+    if (rowBox.X1 >= rowBox.X2) {
+      return;
+    }
+    TerrainProbe west =
+        CreateProbeAtXZ(probeSolid, rowBox.X1, yEnd, z, ref aboveSurface);
+    probes.Add(west);
+    TerrainProbe east =
+        CreateProbeAtXZ(probeSolid, rowBox.X2 - 1, yEnd, z, ref aboveSurface);
+    probes.Add(east);
   }
 
   /// <summary>
@@ -86,70 +134,50 @@ public class OffsetBlockSchematic : BlockSchematic {
   /// <param name="worldForResolve"></param>
   public void AutoConfigureProbes(IWorldAccessor worldForResolve) {
     HashSet<BlockPos> probeSolid = GetProbeSolidPositions(worldForResolve);
-    int surface = int.Max(1, 1 - OffsetY);
+    int yEnd = int.MaxValue;
     Cuboidi surfaceBox = Outline.GetBoundingBoxForIntersection(
-        new Cuboidi(0, 0, 0, int.MaxValue, surface, int.MaxValue));
+        new Cuboidi(0, 0, 0, int.MaxValue, yEnd, int.MaxValue));
     HashSet<TerrainProbe> probes = [];
+    bool aboveSurface = false;
     int x = surfaceBox.X1;
     for (; x < surfaceBox.X2; x += AutoProbeSpacing) {
-      Cuboidi rowBox = Outline.GetBoundingBoxForIntersection(
-          new Cuboidi(x, 0, 0, x + 1, surface, int.MaxValue));
-      if (rowBox.Z1 < rowBox.Z2) {
-        TerrainProbe north =
-            new() { X = x, Z = rowBox.Z1, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z1) };
-        probes.Add(north);
-        TerrainProbe south =
-            new() { X = x, Z = rowBox.Z2 - 1, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z2 - 1) };
-        probes.Add(south);
-      }
+      AddNorthSouthProbes(probeSolid, x, yEnd, probes, ref aboveSurface);
     }
     if (surfaceBox.X1 + 1 < surfaceBox.X2 &&
         x - AutoProbeSpacing < surfaceBox.X2) {
       x = surfaceBox.X2 - 1;
-      Cuboidi rowBox = Outline.GetBoundingBoxForIntersection(
-          new Cuboidi(x, 0, 0, x + 1, surface, int.MaxValue));
-      if (rowBox.Z1 < rowBox.Z2) {
-        TerrainProbe north =
-            new() { X = x, Z = rowBox.Z1, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z1) };
-        probes.Add(north);
-        TerrainProbe south =
-            new() { X = x, Z = rowBox.Z2 - 1, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, x, rowBox.Z2 - 1) };
-        probes.Add(south);
-      }
+      AddNorthSouthProbes(probeSolid, x, yEnd, probes, ref aboveSurface);
     }
     int z = surfaceBox.Z1;
     for (; z < surfaceBox.Z2; z += AutoProbeSpacing) {
-      Cuboidi rowBox = Outline.GetBoundingBoxForIntersection(
-          new Cuboidi(0, 0, z, int.MaxValue, surface, z + 1));
-      if (rowBox.X1 < rowBox.X2) {
-        TerrainProbe west =
-            new() { X = rowBox.X1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, rowBox.X1, z) };
-        probes.Add(west);
-        TerrainProbe east =
-            new() { X = rowBox.X2 - 1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, rowBox.X2 - 1, z) };
-        probes.Add(east);
-      }
+      AddWestEastProbes(probeSolid, z, yEnd, probes, ref aboveSurface);
     }
     if (surfaceBox.Z1 + 1 < surfaceBox.Z2 &&
         z - AutoProbeSpacing < surfaceBox.Z2) {
       z = surfaceBox.Z2 - 1;
-      Cuboidi rowBox = Outline.GetBoundingBoxForIntersection(
-          new Cuboidi(0, 0, z, int.MaxValue, surface, z + 1));
-      if (rowBox.X1 < rowBox.X2) {
-        TerrainProbe west =
-            new() { X = rowBox.X1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, rowBox.X1, z) };
-        probes.Add(west);
-        TerrainProbe east =
-            new() { X = rowBox.X2 - 1, Z = z, YMin = int.Min(-1, OffsetY - 1),
-                    YEnd = GetProbeYMax(probeSolid, rowBox.X2 - 1, z) };
-        probes.Add(east);
+      AddWestEastProbes(probeSolid, z, yEnd, probes, ref aboveSurface);
+    }
+    if (aboveSurface) {
+      yEnd = int.Max(1, 1 - OffsetY);
+      surfaceBox = Outline.GetBoundingBoxForIntersection(
+          new Cuboidi(0, 0, 0, int.MaxValue, yEnd, int.MaxValue));
+      x = surfaceBox.X1;
+      for (; x < surfaceBox.X2; x += AutoProbeSpacing) {
+        AddNorthSouthProbes(probeSolid, x, yEnd, probes, ref aboveSurface);
+      }
+      if (surfaceBox.X1 + 1 < surfaceBox.X2 &&
+          x - AutoProbeSpacing < surfaceBox.X2) {
+        x = surfaceBox.X2 - 1;
+        AddNorthSouthProbes(probeSolid, x, yEnd, probes, ref aboveSurface);
+      }
+      z = surfaceBox.Z1;
+      for (; z < surfaceBox.Z2; z += AutoProbeSpacing) {
+        AddWestEastProbes(probeSolid, z, yEnd, probes, ref aboveSurface);
+      }
+      if (surfaceBox.Z1 + 1 < surfaceBox.Z2 &&
+          z - AutoProbeSpacing < surfaceBox.Z2) {
+        z = surfaceBox.Z2 - 1;
+        AddWestEastProbes(probeSolid, z, yEnd, probes, ref aboveSurface);
       }
     }
     Probes = [..probes];
@@ -263,7 +291,11 @@ public class OffsetBlockSchematic : BlockSchematic {
         return -2;
       }
       yTerrainSum += y;
-      yMax = int.Min(yMax, y - probe.YMin);
+      if (probe.YMin > int.MinValue) {
+        // Avoid running this update when YMin = int.MinValue, because that
+        // would cause overflow errors.
+        yMax = int.Min(yMax, y - probe.YMin);
+      }
       yMin = int.Max(yMin, y - probe.YEnd);
       if (yMin >= yMax) {
         // The probe failed.
