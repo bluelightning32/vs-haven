@@ -21,8 +21,6 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
   // Dispenser's own copy of harvestTime, because
   // BlockBehaviorHarvestable.harvestTime is private.
   private float _harvestTime;
-  private BlockSelection _lastSelection = null;
-  private ICoreAPI _api;
   private NatFloat _renewalHours;
   private CompositeShape _harvestedShape = null;
   private MeshData[] _harvestedMeshes = null;
@@ -68,7 +66,6 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
     harvestedStacks.Foreach(
         harvestedStack => harvestedStack?.Resolve(
             api.World, "harvestedStack of block ", block.Code));
-    _api = api;
     if (api is ICoreClientAPI capi && _harvestedShape != null) {
       List<MeshData> meshes = new();
       _harvestedShape.LoadAlternates(capi.Assets, capi.Logger);
@@ -221,7 +218,6 @@ public class Dispenser : BlockBehaviorHarvestable, IBlockBreaking {
         !IsUnripe(player.Entity.World, player, blockSel.Position)) {
       remainingResistance -= dt;
     }
-    _lastSelection = blockSel;
     handled = EnumHandling.PreventSubsequent;
   }
 
