@@ -8,6 +8,6 @@
   "haven:block-quarry-blueclay": "Blue clay dispenser",
   "haven:block-quarry-fireclay": "Fire clay dispenser",
   "haven:block-quarry-*": "Stone dispenser",
-  "haven:block-tallplant-coopersreed-land-free": "Cattails dispenser",
-  "haven:block-tallplant-papyrus-land-free": "Papyrus dispenser",
+  "haven:block-tallplant-coopersreed-*-free": "Cattails dispenser",
+  "haven:block-tallplant-papyrus-*-free": "Papyrus dispenser",
 }
