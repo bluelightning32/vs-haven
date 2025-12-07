@@ -1,8 +1,7 @@
-using System.Collections.Generic;
-
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 
 namespace Haven;
 
@@ -72,38 +71,34 @@ public interface ITerrainHeightReader {
 public class TerrainHeightReader : ITerrainHeightReader {
   private readonly IChunkLoader _loader;
   private readonly bool _useWorldGenHeight = true;
-  private readonly HashSet<int> _replace;
-  private readonly HashSet<int> _nonsolid;
 
-  public TerrainHeightReader(IChunkLoader loader, bool useWorldGenHeight,
-                             HashSet<int> replace, HashSet<int> nonsolid) {
+  public TerrainHeightReader(IChunkLoader loader, bool useWorldGenHeight) {
     _loader = loader;
     _useWorldGenHeight = useWorldGenHeight;
-    _replace = replace;
-    _nonsolid = nonsolid;
-    _nonsolid ??= [];
-    _nonsolid.Add(0);
   }
 
-  public (ushort[], bool[])
-      GetHeightsAndSolid(IBlockAccessor accessor, int chunkX, int chunkZ) {
+  ushort[] GetHeights(IBlockAccessor accessor, int chunkX, int chunkZ) {
     IMapChunk chunk = accessor.GetMapChunk(chunkX, chunkZ);
     // The lakes need to be generated first, because they signficantly change
     // the surface height. Lakes are filled in during the TerrainFeatures pass.
     // For chunks within the TerrainFeatures pass, it is up to the caller to
     // execute the terrain reader sufficiently late in the pass.
-    if (chunk == null ||
-        chunk.CurrentPass <
-            Vintagestory.API.Server.EnumWorldGenPass.TerrainFeatures) {
+    if (chunk == null || chunk.CurrentPass < EnumWorldGenPass.TerrainFeatures) {
       _loader.LoadChunkColumn(chunkX, chunkZ);
+      return null;
+    }
+    return _useWorldGenHeight ? chunk.WorldGenTerrainHeightMap
+                              : chunk.RainHeightMap;
+  }
+
+  public (ushort[], bool[])
+      GetHeightsAndSolid(IBlockAccessor accessor, int chunkX, int chunkZ) {
+    ushort[] heights = GetHeights(accessor, chunkX, chunkZ);
+    if (heights == null) {
       return (null, null);
     }
-    ushort[] heightsOriginal = _useWorldGenHeight
-                                   ? chunk.WorldGenTerrainHeightMap
-                                   : chunk.RainHeightMap;
     const int blocks = GlobalConstants.ChunkSize * GlobalConstants.ChunkSize;
     bool[] solid = new bool[blocks];
-    ushort[] heights = new ushort[blocks];
     int offset = 0;
     BlockPos pos =
         new(Dimensions.NormalWorld) { Z = chunkZ * GlobalConstants.ChunkSize };
@@ -111,15 +106,9 @@ public class TerrainHeightReader : ITerrainHeightReader {
     for (int z = 0; z < GlobalConstants.ChunkSize; ++z, ++pos.Z) {
       pos.X = xOffset;
       for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++pos.X, ++offset) {
-        pos.Y = heightsOriginal[offset];
-        Block surface = accessor.GetBlock(pos);
-        while (pos.Y > 0 && _replace.Contains(surface.Id)) {
-          --pos.Y;
-          surface = accessor.GetBlock(pos);
-        }
-        surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
-        solid[offset] = !_nonsolid.Contains(surface.Id);
-        heights[offset] = (ushort)pos.Y;
+        pos.Y = heights[offset];
+        Block surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+        solid[offset] = surface.Id != 0;
       }
     }
     return (heights, solid);

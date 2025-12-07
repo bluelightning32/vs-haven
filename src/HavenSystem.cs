@@ -21,7 +21,7 @@ public class HavenSystem : ModSystem {
   private IBlockAccessorRevertable _revertable = null;
   private HavenGenerator _activeRevertableGenerator = null;
   private ChunkLoader _loader = null;
-  private TerrainHeightReader _terrain = null;
+  private PrunedTerrainHeightReader _terrain = null;
   private ServerCommands _commands = null;
 
   public override double ExecuteOrder() { return 1.0; }
@@ -49,9 +49,10 @@ public class HavenSystem : ModSystem {
     _revertable = sapi.World.GetBlockAccessorRevertable(true, true);
     _loader = new(sapi.Event, sapi.WorldManager, sapi.World.BlockAccessor,
                   ChunksLoaded);
-    _terrain =
-        new(_loader, false, _blockConfig.ResolveTerrainReplace(resolver),
-            _blockConfig.TerrainAvoid.Resolve(resolver));
+    _terrain = new PrunedTerrainHeightReader(
+        new TerrainHeightReader(_loader, false),
+        _blockConfig.ResolveTerrainReplace(resolver),
+        _blockConfig.TerrainAvoid.Resolve(resolver));
 
     // This is normally set by GenStructures.initWorldGen, but that isn't called
     // in flat worlds. So set the filler block directly here instead.
