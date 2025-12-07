@@ -21,7 +21,7 @@ public class PrunedTerrainHeightReader {
     _resolver = new(_server.World, _server.Api.Logger);
   }
 
-  public PrunedTerrainHeightReader() { }
+  public PrunedTerrainHeightReader() {}
 
   [TestMethod]
   public void SolidBlocksAreSolid() {

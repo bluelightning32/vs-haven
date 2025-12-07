@@ -41,7 +41,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
 
   public BlockPos Center => _centerLocator.Center;
 
-  private HashSet<int> _clearBlocks = null;
+  private Dictionary<int, TerrainCategory> _terrainCategories = null;
 
   public HavenGenerator(IWorldAccessor worldForResolve, IChunkLoader loader,
                         ILogger logger, ITerrainHeightReader reader,
@@ -57,7 +57,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         logger, Terrain, new(_resourceZone.Center.X, _resourceZone.Center.Z),
         (int)_resourceZone.Radius, config.MaxRoughnessPerimeter,
         config.MaxRoughnessArea, config.MinLandRatio);
-    _clearBlocks = config.ClearBlocks;
+    _terrainCategories = config.TerrainCategories;
   }
 
   public LocationResult TryFinalizeLocation(IBlockAccessor accessor,
@@ -102,7 +102,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
       _resourceZone.Center = _centerLocator.Center;
       // TODO: update haven intersection entries.
       _pruneResourceZone =
-          new(Loader, Terrain, _clearBlocks,
+          new(Loader, Terrain, _terrainCategories,
               new Vec2i(_resourceZone.Center.X, _resourceZone.Center.Z),
               (int)_resourceZone.Radius);
     }
@@ -139,11 +139,11 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
     WorldForResolve = worldForResolve;
     Loader = loader;
     Logger = logger;
-    _clearBlocks = config.ClearBlocks;
+    _terrainCategories = config.TerrainCategories;
     Terrain.Restore(reader);
     _centerLocator.Restore(logger, Terrain);
     if (_pruneResourceZone != null) {
-      _pruneResourceZone.Restore(Loader, Terrain, _clearBlocks);
+      _pruneResourceZone.Restore(Loader, Terrain, _terrainCategories);
     }
   }
 }

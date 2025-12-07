@@ -27,7 +27,7 @@ public class DiskPruner : IWorldGenerator {
 
   IChunkLoader _loader;
   TerrainSurvey _terrain;
-  HashSet<int> _removeSet;
+  Dictionary<int, TerrainCategory> _terrainCategories;
 
   /// <summary>
   /// Constructor for deserialization
@@ -35,10 +35,11 @@ public class DiskPruner : IWorldGenerator {
   private DiskPruner() {}
 
   public DiskPruner(IChunkLoader loader, TerrainSurvey terrain,
-                    HashSet<int> removeSet, Vec2i center, int radius) {
+                    Dictionary<int, TerrainCategory> terrainCategories,
+                    Vec2i center, int radius) {
     _loader = loader;
     _terrain = terrain;
-    _removeSet = removeSet;
+    _terrainCategories = terrainCategories;
     _center = center;
     _finishedRadius = -1;
     _activeRadius = radius;
@@ -97,7 +98,7 @@ public class DiskPruner : IWorldGenerator {
             pos.Y = y;
             pos.Z = chunkZOffset + z;
             int existing = accessor.GetBlockId(pos);
-            if (_removeSet.Contains(existing)) {
+            if (GetCategory(existing).ShouldClear()) {
               accessor.SetBlock(0, pos);
             }
           }
@@ -140,7 +141,7 @@ public class DiskPruner : IWorldGenerator {
             pos.Y = y;
             pos.Z = chunkZOffset + z;
             int existing = accessor.GetBlockId(pos);
-            if (_removeSet.Contains(existing)) {
+            if (GetCategory(existing).ShouldClear()) {
               accessor.SetBlock(0, pos);
             }
           }
@@ -161,6 +162,13 @@ public class DiskPruner : IWorldGenerator {
     return Generate(accessor);
   }
 
+  private TerrainCategory GetCategory(int blockId) {
+    if (_terrainCategories.TryGetValue(blockId, out TerrainCategory category)) {
+      return category;
+    }
+    return TerrainCategory.Default;
+  }
+
   public bool Commit(IBlockAccessor accessor) { return true; }
 
   /// <summary>
@@ -169,11 +177,11 @@ public class DiskPruner : IWorldGenerator {
   /// </summary>
   /// <param name="reader"></param>
   /// <param name="terrain"></param>
-  /// <param name="removeSet"></param>
+  /// <param name="blocks"></param>
   public void Restore(IChunkLoader loader, TerrainSurvey terrain,
-                      HashSet<int> removeSet) {
+                      Dictionary<int, TerrainCategory> blocks) {
     _loader = loader;
     _terrain = terrain;
-    _removeSet = removeSet;
+    _terrainCategories = blocks;
   }
 }

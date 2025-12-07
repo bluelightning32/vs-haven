@@ -24,6 +24,10 @@ public enum TerrainCategory {
 }
 
 public static class TerrainCategoryExtensions {
+  public static bool ShouldClear(this TerrainCategory category) {
+    return category == TerrainCategory.Clear;
+  }
+
   public static bool IsSurface(this TerrainCategory category) {
     return category >= TerrainCategory.Nonsolid;
   }

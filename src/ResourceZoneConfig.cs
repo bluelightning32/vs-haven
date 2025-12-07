@@ -19,7 +19,8 @@ public class ResourceZoneConfig {
 
   private IWorldAccessor _worldForResolve = null;
   private ICollection<Structure> _structures = null;
-  public HashSet<int> ClearBlocks { get; private set; }
+  public Dictionary<int, TerrainCategory> TerrainCategories { get;
+                                                              private set; }
 
   public ResourceZoneConfig() {}
 
@@ -39,7 +40,7 @@ public class ResourceZoneConfig {
       }
     }
     logger.Event($"Loaded {_structures.Count} haven structures.");
-    ClearBlocks = config.ResourceZoneClear.Resolve(resolver);
+    TerrainCategories = config.ResolveTerrainCategories(resolver);
   }
 
   public IEnumerable<OffsetBlockSchematic> SelectStructures(IRandom rand) {
