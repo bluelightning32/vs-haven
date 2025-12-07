@@ -1,0 +1,7 @@
+{
+  terrainRaiseStart: {
+    include: {
+      "*:gravel-*" : 1
+    }
+  }
+}

@@ -4,7 +4,9 @@ using ProtoBuf;
 
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 
 namespace Haven;
 
@@ -24,19 +26,23 @@ public class DiskPruner : IWorldGenerator {
   int _nextRadius;
   [ProtoMember(6)]
   readonly HashSet<(int, int)> _finishedChunks = [];
-
-  IChunkLoader _loader;
-  TerrainSurvey _terrain;
-  PrunedTerrainHeightReader _pruneConfig;
+  [ProtoMember(7)]
+  readonly Dictionary<BlockPos, TreeAttribute> _queuedBlockEntities = [];
+  private IWorldAccessor _worldForResolve;
+  private IChunkLoader _loader;
+  private TerrainSurvey _terrain;
+  private PrunedTerrainHeightReader _pruneConfig;
 
   /// <summary>
   /// Constructor for deserialization
   /// </summary>
   private DiskPruner() {}
 
-  public DiskPruner(IChunkLoader loader, TerrainSurvey terrain,
+  public DiskPruner(IWorldAccessor worldForResolve, IChunkLoader loader,
+                    TerrainSurvey terrain,
                     PrunedTerrainHeightReader pruneConfig, Vec2i center,
                     int radius) {
+    _worldForResolve = worldForResolve;
     _loader = loader;
     _terrain = terrain;
     _pruneConfig = pruneConfig;
@@ -46,7 +52,7 @@ public class DiskPruner : IWorldGenerator {
     _nextRadius = _activeRadius;
   }
 
-  public bool Done {
+  public bool GenerateDone {
     get { return _activeRadius == _finishedRadius; }
   }
 
@@ -68,17 +74,86 @@ public class DiskPruner : IWorldGenerator {
   }
 
   private void ProcessColumn(IBlockAccessor accessor, ushort[] sourceHeights,
-                             ChunkColumnSurvey survey, BlockPos pos,
-                             int offset) {
-    int surveyHeight = survey.Heights[offset];
+                             BlockPos pos, int offset) {
     int mapHeight = sourceHeights[offset];
-    for (int y = mapHeight; y > surveyHeight; --y) {
+    pos.Y = mapHeight;
+    Block surface = _pruneConfig.GetSurfaceBeforeRaise(accessor, pos);
+    // First prune the blocks above the surface.
+    int prunedHeight = pos.Y;
+    for (int y = mapHeight; y > prunedHeight; --y) {
       pos.Y = y;
       int existing = accessor.GetBlockId(pos);
       if (GetCategory(existing).ShouldClear()) {
         accessor.SetBlock(0, pos);
       }
     }
+
+    if (_pruneConfig.Raise <= 0) {
+      // None of the columns should be raised.
+      return;
+    }
+
+    // Now possibly raise the column.
+    Block raiseBlock = _pruneConfig.GetRaiseStart(accessor, pos, surface);
+    if (raiseBlock == null) {
+      // Don't raise this column.
+      return;
+    }
+    int raiseStart = pos.Y;
+
+    // Check if there are more blocks above the surface that the terrain reader
+    // missed.
+    pos.Y = mapHeight;
+    surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+    while (surface.Id != 0 && _pruneConfig.GetCategory(surface.BlockId) !=
+                                  TerrainCategory.SolidHold) {
+      ++mapHeight;
+      pos.Y = mapHeight;
+      surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+    }
+
+    BlockPos moveTo = new(pos.X, 0, pos.Z, pos.dimension);
+    for (int y = mapHeight; y > raiseStart; --y) {
+      pos.Y = y;
+      moveTo.Y = y + _pruneConfig.Raise;
+      CopyBlock(accessor, pos, moveTo);
+    }
+    if (_pruneConfig.GetCategory(raiseBlock.Id) == TerrainCategory.RaiseStart) {
+      pos.Y = raiseStart;
+      for (int y = raiseStart + _pruneConfig.Raise; y > raiseStart; --y) {
+        moveTo.Y = y;
+        CopyBlock(accessor, pos, moveTo);
+      }
+    } else {
+      for (int y = raiseStart + _pruneConfig.Raise; y > raiseStart; --y) {
+        moveTo.Y = y;
+        accessor.SetBlock(0, moveTo);
+      }
+    }
+  }
+
+  private void CopyBlock(IBlockAccessor accessor, BlockPos pos,
+                         BlockPos moveTo) {
+    CopyBlock(accessor, pos, moveTo, BlockLayersAccess.Solid);
+    CopyBlock(accessor, pos, moveTo, BlockLayersAccess.Fluid);
+    BlockEntity be = accessor.GetBlockEntity(pos);
+    if (be != null) {
+      TreeAttribute tree = new();
+      be.ToTreeAttributes(tree);
+      _queuedBlockEntities.Add(moveTo.Copy(), tree);
+    }
+    Dictionary<int, Block> decors = accessor.GetSubDecors(pos);
+    if (decors != null) {
+      foreach ((int face, Block decor) in decors) {
+        accessor.SetDecor(decor, pos, face);
+      }
+    }
+  }
+
+  private void CopyBlock(IBlockAccessor accessor, BlockPos pos, BlockPos moveTo,
+                         int layer) {
+    Block source = accessor.GetBlock(pos, layer);
+    accessor.SetBlock(source.Id, moveTo, layer);
   }
 
   public bool Generate(IBlockAccessor accessor) {
@@ -108,7 +183,7 @@ public class DiskPruner : IWorldGenerator {
         for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
           pos.X = chunkXOffset + x;
           pos.Z = chunkZOffset + z;
-          ProcessColumn(accessor, sourceHeights, survey, pos, offset);
+          ProcessColumn(accessor, sourceHeights, pos, offset);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
@@ -144,7 +219,7 @@ public class DiskPruner : IWorldGenerator {
           }
           pos.X = chunkXOffset + x;
           pos.Z = chunkZOffset + z;
-          ProcessColumn(accessor, sourceHeights, survey, pos, offset);
+          ProcessColumn(accessor, sourceHeights, pos, offset);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
@@ -166,17 +241,84 @@ public class DiskPruner : IWorldGenerator {
     return _pruneConfig.GetCategory(blockId);
   }
 
-  public bool Commit(IBlockAccessor accessor) { return true; }
+  public bool Commit(IBlockAccessor accessor) {
+    List<BlockPos> finished = [];
+    foreach ((BlockPos pos, TreeAttribute tree) in _queuedBlockEntities) {
+      if (CommitBlockEntity(accessor, pos, tree)) {
+        finished.Add(pos);
+      }
+    }
+    foreach (BlockPos pos in finished) {
+      _queuedBlockEntities.Remove(pos);
+    }
+    return _queuedBlockEntities.Count == 0;
+  }
+
+  private bool CommitBlockEntity(IBlockAccessor accessor, BlockPos pos,
+                                 TreeAttribute tree) {
+    string treeBlockCode = tree.GetString("blockCode");
+    if (treeBlockCode == null) {
+      return true;
+    }
+    Block block = accessor.GetBlock(pos);
+    if (block.Code != treeBlockCode) {
+      if (block.Id == 0) {
+        if (accessor.GetChunkAtBlockPos(pos) == null) {
+          _loader.LoadChunkColumnByBlockXZ(pos.X, pos.Z);
+          // Try again when the chunk is loaded.
+          return false;
+        }
+      }
+      // Some other block was placed at the target location in the meantime. So
+      // give up on updating the block entity for the old block.
+      HavenSystem.Logger.Warning(
+          "A block of {0} was placed at {1} before the block entity for " +
+          "block {2} could be restored.",
+          block.Code, pos, treeBlockCode);
+      return true;
+    }
+    if (block.EntityClass == null) {
+      // Something went wrong. This block was not supposed to have a block
+      // entity.
+      HavenSystem.Logger.Error(
+          "Tried to restore a block entity for block {0}, but that block " +
+          "does not have a block entity.",
+          block.Code);
+      return true;
+    }
+    BlockEntity be = accessor.GetBlockEntity(pos);
+    if (be == null) {
+      accessor.SpawnBlockEntity(block.EntityClass, pos);
+      be = accessor.GetBlockEntity(pos);
+      if (be == null) {
+        // Failed to spawn the block entity. Give up.
+        HavenSystem.Logger.Error("Failed to spawn a block entity of type {0}",
+                                 block.EntityClass);
+        return true;
+      }
+    }
+    tree.SetInt("posx", pos.X);
+    tree.SetInt("posy", pos.InternalY);
+    tree.SetInt("posz", pos.Z);
+    be.FromTreeAttributes(tree, _worldForResolve);
+    if (accessor is not IWorldGenBlockAccessor) {
+      be.MarkDirty();
+    }
+    return true;
+  }
 
   /// <summary>
   /// Call this to initialize the remaining fields after the object has been
   /// deserialized.
   /// </summary>
+  /// <param name="worldForResolve"></param>
   /// <param name="reader"></param>
   /// <param name="terrain"></param>
   /// <param name="blocks"></param>
-  public void Restore(IChunkLoader loader, TerrainSurvey terrain,
+  public void Restore(IWorldAccessor worldForResolve, IChunkLoader loader,
+                      TerrainSurvey terrain,
                       PrunedTerrainHeightReader pruneConfig) {
+    _worldForResolve = worldForResolve;
     _loader = loader;
     _terrain = terrain;
     _pruneConfig = pruneConfig;

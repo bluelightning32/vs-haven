@@ -30,11 +30,26 @@ public class BlockConfig {
   /// </summary>
   [JsonProperty]
   public BlockSet TerrainAvoid = new();
+  /// <summary>
+  /// These blocks are solid and count as the surface. They can be raised with
+  /// the terrain, but the cannot be duplicated to raise the terrain (only
+  /// moved).
+  /// </summary>
+  [JsonProperty]
+  public BlockSet TerrainSolid = new();
+  /// <summary>
+  /// These blocks are solid, count as the surface, and can be duplicated to
+  /// raise the terrain.
+  /// </summary>
+  [JsonProperty]
+  public BlockSet TerrainRaiseStart = new();
 
   public void Merge(BlockConfig other) {
     TerrainReplace.Merge(other.TerrainReplace);
     ResourceZoneClear.Merge(other.ResourceZoneClear);
     TerrainAvoid.Merge(other.TerrainAvoid);
+    TerrainSolid.Merge(other.TerrainSolid);
+    TerrainRaiseStart.Merge(other.TerrainRaiseStart);
   }
 
   public static BlockConfig Load(ILogger logger, IAssetManager assetManager) {
@@ -55,6 +70,12 @@ public class BlockConfig {
   public Dictionary<int, TerrainCategory>
   ResolveTerrainCategories(MatchResolver resolver) {
     Dictionary<int, TerrainCategory> result = [];
+    foreach (int id in TerrainSolid.Resolve(resolver)) {
+      result[id] = TerrainCategory.Solid;
+    }
+    foreach (int id in TerrainRaiseStart.Resolve(resolver)) {
+      result[id] = TerrainCategory.RaiseStart;
+    }
     foreach (int id in TerrainAvoid.Resolve(resolver)) {
       result[id] = TerrainCategory.Nonsolid;
     }

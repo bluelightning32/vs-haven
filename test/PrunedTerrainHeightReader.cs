@@ -182,7 +182,7 @@ public class PrunedTerrainHeightReader {
 
     FakeChunkLoader loader = new();
     Dictionary<int, TerrainCategory> terrainCategories =
-        new() { { soil.Id, TerrainCategory.Duplicate } };
+        new() { { soil.Id, TerrainCategory.RaiseStart } };
     Real.PrunedTerrainHeightReader reader =
         new(new Real.TerrainHeightReader(loader, false), terrainCategories, 3);
     Assert.AreEqual(3, ((ITerrainHeightReader)reader)

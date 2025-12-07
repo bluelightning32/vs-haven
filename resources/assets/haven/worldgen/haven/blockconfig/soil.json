@@ -1,0 +1,18 @@
+{
+  terrainSolid: {
+    include: {
+      // Soil with grass on top can be moved up, but it should not be duplicated. Instead the dirty layer below it without grass should be duplicated.
+      "*:soil-*" : 1
+    },
+    exclude: {
+      // Exclude soil without grass from this rule. It is handled by terrainRaiseStart instead.
+      "*:soil-*-none" : 2
+    }
+  },
+  terrainRaiseStart: {
+    include: {
+      // Allow soil without grass to be duplicated in order to raise the terrain.
+      "*:soil-*-none" : 1
+    }
+  }
+}

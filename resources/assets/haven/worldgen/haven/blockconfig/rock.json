@@ -1,0 +1,8 @@
+{
+  terrainRaiseStart: {
+    include: {
+      "*:rock-*" : 1,
+      "*:crackedrock-*" : 1
+    }
+  }
+}

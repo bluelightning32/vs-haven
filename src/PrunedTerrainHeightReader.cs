@@ -23,7 +23,7 @@ public enum TerrainCategory {
   Solid,
   // Counts towards the surface level. Can be duplicated to raised the terrain.
   // Solid.
-  Duplicate,
+  RaiseStart,
   // Counts towards the surface level. Cannot be raised.
   SolidHold,
   Default = SolidHold
@@ -48,7 +48,7 @@ public static class TerrainCategoryExtensions {
 
   public static bool IsRaiseStart(this TerrainCategory category,
                                   bool belowSurface) {
-    return category == TerrainCategory.Duplicate ||
+    return category == TerrainCategory.RaiseStart ||
            (belowSurface && !IsSurface(category));
   }
 }
@@ -69,7 +69,7 @@ public static class TerrainCategoryExtensions {
 public class PrunedTerrainHeightReader : ITerrainHeightReader {
   public readonly ITerrainHeightReader Source;
   private readonly Dictionary<int, TerrainCategory> _terrainCategories;
-  private readonly ushort _raise;
+  public readonly ushort Raise;
 
   public PrunedTerrainHeightReader(
       ITerrainHeightReader source,
@@ -77,7 +77,7 @@ public class PrunedTerrainHeightReader : ITerrainHeightReader {
     Source = source;
     _terrainCategories = terrainCategories ?? [];
     _terrainCategories.TryAdd(0, TerrainCategory.Skip);
-    _raise = raise;
+    Raise = raise;
   }
 
   /// <summary>
@@ -152,7 +152,7 @@ public class PrunedTerrainHeightReader : ITerrainHeightReader {
         heights[offset] = (ushort)pos.Y;
 
         if (GetRaiseStart(accessor, pos, surface) != null) {
-          heights[offset] += _raise;
+          heights[offset] += Raise;
         }
       }
     }

@@ -1,0 +1,7 @@
+{
+  terrainRaiseStart: {
+    include: {
+      "*:sand-*" : 1
+    }
+  }
+}

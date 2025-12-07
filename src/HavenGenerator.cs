@@ -102,7 +102,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
       _resourceZone.Center = _centerLocator.Center;
       // TODO: update haven intersection entries.
       _pruneResourceZone =
-          new(Loader, Terrain, _reader,
+          new(WorldForResolve, Loader, Terrain, _reader,
               new Vec2i(_resourceZone.Center.X, _resourceZone.Center.Z),
               (int)_resourceZone.Radius);
     }
@@ -126,6 +126,9 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
     if (Failed) {
       return true;
     }
+    if (!_pruneResourceZone.Commit(accessor)) {
+      return false;
+    }
     bool structuresCommitted = true;
     foreach (SchematicPlacer placer in _resourceZone.Structures) {
       structuresCommitted &= placer.Commit(accessor);
@@ -143,7 +146,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
     Terrain.Restore(reader);
     _centerLocator.Restore(logger, Terrain);
     if (_pruneResourceZone != null) {
-      _pruneResourceZone.Restore(Loader, Terrain, reader);
+      _pruneResourceZone.Restore(worldForResolve, Loader, Terrain, reader);
     }
   }
 }
