@@ -20,9 +20,10 @@ public class DiskPruner {
     FakeChunkLoader loader = new();
     Dictionary<int, TerrainCategory> terrainCategories =
         new() { { granite.Id, TerrainCategory.Clear } };
+    Real.PrunedTerrainHeightReader pruneConfig = new(reader, terrainCategories, 100);
 
     Real.DiskPruner pruner =
-        new(loader, terrain, terrainCategories, new Vec2i(1, 1), 0);
+        new(loader, terrain, pruneConfig, new Vec2i(1, 1), 0);
     Assert.IsFalse(pruner.Done);
     Assert.IsFalse(pruner.Generate(Framework.Api.World.BlockAccessor));
     Assert.IsFalse(pruner.Done);
@@ -51,6 +52,7 @@ public class DiskPruner {
     FakeChunkLoader loader = new();
     Dictionary<int, TerrainCategory> terrainCategories =
         new() { { granite.Id, TerrainCategory.Clear } };
+    Real.PrunedTerrainHeightReader pruneConfig = new(reader, terrainCategories, 100);
 
     reader.FillChunk(0, 0, 1, 0, 0);
 
@@ -65,7 +67,7 @@ public class DiskPruner {
     chunk.RainHeightMap[1 * GlobalConstants.ChunkSize + 1] = 5;
 
     Real.DiskPruner pruner =
-        new(loader, terrain, terrainCategories, new Vec2i(1, 1), 0);
+        new(loader, terrain, pruneConfig, new Vec2i(1, 1), 0);
     Assert.IsTrue(pruner.Generate(Framework.Api.World.BlockAccessor));
     Assert.IsTrue(pruner.Done);
 
@@ -87,6 +89,7 @@ public class DiskPruner {
     FakeChunkLoader loader = new();
     Dictionary<int, TerrainCategory> terrainCategories =
         new() { { granite.Id, TerrainCategory.Clear } };
+    Real.PrunedTerrainHeightReader pruneConfig = new(reader, terrainCategories, 100);
 
     reader.FillChunk(0, 0, 1, 0, 0);
 
@@ -100,7 +103,7 @@ public class DiskPruner {
     }
 
     Real.DiskPruner pruner =
-        new(loader, terrain, terrainCategories, new Vec2i(2, 2), 0);
+        new(loader, terrain, pruneConfig, new Vec2i(2, 2), 0);
     Assert.IsTrue(pruner.Generate(Framework.Api.World.BlockAccessor));
     Assert.IsTrue(pruner.Done);
 
@@ -140,10 +143,11 @@ public class DiskPruner {
     FakeChunkLoader loader = new();
     Dictionary<int, TerrainCategory> terrainCategories =
         new() { { granite.Id, TerrainCategory.Clear } };
+    Real.PrunedTerrainHeightReader pruneConfig = new(reader, terrainCategories, 100);
     reader.FillChunk(0, 0, 1, 0, 0);
 
     Real.DiskPruner pruner =
-        new(loader, terrain, terrainCategories, new Vec2i(1, 1), 0);
+        new(loader, terrain, pruneConfig, new Vec2i(1, 1), 0);
     Framework.Api.World.BlockAccessor.SetBlock(
         granite.Id, new BlockPos(1, 2, 1, Dimensions.NormalWorld));
     IMapChunk chunk = Framework.Api.World.BlockAccessor.GetMapChunk(0, 0);
@@ -151,7 +155,7 @@ public class DiskPruner {
 
     byte[] data = SerializerUtil.Serialize(pruner);
     Real.DiskPruner copy = SerializerUtil.Deserialize<Real.DiskPruner>(data);
-    copy.Restore(loader, terrain, terrainCategories);
+    copy.Restore(loader, terrain, pruneConfig);
     Assert.IsFalse(pruner.Done);
     Assert.IsFalse(copy.Done);
 
@@ -159,7 +163,7 @@ public class DiskPruner {
 
     data = SerializerUtil.Serialize(pruner);
     copy = SerializerUtil.Deserialize<Real.DiskPruner>(data);
-    copy.Restore(loader, terrain, terrainCategories);
+    copy.Restore(loader, terrain, pruneConfig);
     Assert.IsTrue(pruner.Done);
     Assert.IsTrue(copy.Done);
   }

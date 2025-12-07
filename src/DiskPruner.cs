@@ -27,7 +27,7 @@ public class DiskPruner : IWorldGenerator {
 
   IChunkLoader _loader;
   TerrainSurvey _terrain;
-  Dictionary<int, TerrainCategory> _terrainCategories;
+  PrunedTerrainHeightReader _pruneConfig;
 
   /// <summary>
   /// Constructor for deserialization
@@ -35,11 +35,11 @@ public class DiskPruner : IWorldGenerator {
   private DiskPruner() {}
 
   public DiskPruner(IChunkLoader loader, TerrainSurvey terrain,
-                    Dictionary<int, TerrainCategory> terrainCategories,
+                    PrunedTerrainHeightReader pruneConfig,
                     Vec2i center, int radius) {
     _loader = loader;
     _terrain = terrain;
-    _terrainCategories = terrainCategories;
+    _pruneConfig = pruneConfig;
     _center = center;
     _finishedRadius = -1;
     _activeRadius = radius;
@@ -161,10 +161,7 @@ public class DiskPruner : IWorldGenerator {
   }
 
   private TerrainCategory GetCategory(int blockId) {
-    if (_terrainCategories.TryGetValue(blockId, out TerrainCategory category)) {
-      return category;
-    }
-    return TerrainCategory.Default;
+    return _pruneConfig.GetCategory(blockId);
   }
 
   public bool Commit(IBlockAccessor accessor) { return true; }
@@ -177,9 +174,9 @@ public class DiskPruner : IWorldGenerator {
   /// <param name="terrain"></param>
   /// <param name="blocks"></param>
   public void Restore(IChunkLoader loader, TerrainSurvey terrain,
-                      Dictionary<int, TerrainCategory> blocks) {
+                      PrunedTerrainHeightReader pruneConfig) {
     _loader = loader;
     _terrain = terrain;
-    _terrainCategories = blocks;
+    _pruneConfig = pruneConfig;
   }
 }

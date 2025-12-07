@@ -41,10 +41,10 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
 
   public BlockPos Center => _centerLocator.Center;
 
-  private Dictionary<int, TerrainCategory> _terrainCategories = null;
+  private PrunedTerrainHeightReader _reader;
 
   public HavenGenerator(IWorldAccessor worldForResolve, IChunkLoader loader,
-                        ILogger logger, ITerrainHeightReader reader,
+                        ILogger logger, PrunedTerrainHeightReader reader,
                         BlockPos center, ResourceZoneConfig config) {
     WorldForResolve = worldForResolve;
     Loader = loader;
@@ -57,7 +57,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         logger, Terrain, new(_resourceZone.Center.X, _resourceZone.Center.Z),
         (int)_resourceZone.Radius, config.MaxRoughnessPerimeter,
         config.MaxRoughnessArea, config.MinLandRatio);
-    _terrainCategories = config.TerrainCategories;
+    _reader = reader;
   }
 
   public LocationResult TryFinalizeLocation(IBlockAccessor accessor,
@@ -102,7 +102,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
       _resourceZone.Center = _centerLocator.Center;
       // TODO: update haven intersection entries.
       _pruneResourceZone =
-          new(Loader, Terrain, _terrainCategories,
+          new(Loader, Terrain, _reader,
               new Vec2i(_resourceZone.Center.X, _resourceZone.Center.Z),
               (int)_resourceZone.Radius);
     }
@@ -134,16 +134,16 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
   }
 
   public void Restore(IWorldAccessor worldForResolve, IChunkLoader loader,
-                      ILogger logger, ITerrainHeightReader reader,
+                      ILogger logger, PrunedTerrainHeightReader reader,
                       ResourceZoneConfig config) {
     WorldForResolve = worldForResolve;
     Loader = loader;
     Logger = logger;
-    _terrainCategories = config.TerrainCategories;
+    _reader = reader;
     Terrain.Restore(reader);
     _centerLocator.Restore(logger, Terrain);
     if (_pruneResourceZone != null) {
-      _pruneResourceZone.Restore(Loader, Terrain, _terrainCategories);
+      _pruneResourceZone.Restore(Loader, Terrain, reader);
     }
   }
 }
