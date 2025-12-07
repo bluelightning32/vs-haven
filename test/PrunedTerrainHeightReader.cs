@@ -12,8 +12,16 @@ namespace Haven.Test;
 
 [PrefixTestClass]
 public class PrunedTerrainHeightReader {
-  private readonly ServerMain _server;
-  public PrunedTerrainHeightReader() { _server = Framework.Server; }
+  private static ServerMain _server;
+  private static Real.MatchResolver _resolver;
+
+  [ClassInitialize()]
+  public static void ClassInit(TestContext testContext) {
+    _server = Framework.Server;
+    _resolver = new(_server.World, _server.Api.Logger);
+  }
+
+  public PrunedTerrainHeightReader() { }
 
   [TestMethod]
   public void SolidBlocksAreSolid() {
@@ -27,8 +35,10 @@ public class PrunedTerrainHeightReader {
     Assert.IsNotNull(chunk);
 
     FakeChunkLoader loader = new();
+    BlockConfig config = new();
     Real.PrunedTerrainHeightReader reader =
-        new(new Real.TerrainHeightReader(loader, true), [], []);
+        new(new Real.TerrainHeightReader(loader, true),
+            config.ResolveTerrainCategories(_resolver));
     int y = ((ITerrainHeightReader)reader)
                 .GetHeight(_server.World.BlockAccessor, new(0, 0));
     _server.World.BlockAccessor.SetBlock(
@@ -71,8 +81,11 @@ public class PrunedTerrainHeightReader {
     chunk.RainHeightMap[1] = 2;
 
     FakeChunkLoader loader = new();
+    BlockConfig config = new();
+    config.TerrainReplace.Include = new() { { "game:rock-granite", 1 } };
     Real.PrunedTerrainHeightReader reader =
-        new(new Real.TerrainHeightReader(loader, false), [granite.Id], []);
+        new(new Real.TerrainHeightReader(loader, false),
+            config.ResolveTerrainCategories(_resolver));
     // Should skip all the granite except at y=0.
     Assert.AreEqual(0, ((ITerrainHeightReader)reader)
                            .GetHeight(_server.World.BlockAccessor, new(0, 0)));
@@ -104,8 +117,11 @@ public class PrunedTerrainHeightReader {
     chunk.RainHeightMap[1] = 2;
 
     FakeChunkLoader loader = new();
+    BlockConfig config = new();
+    config.TerrainAvoid.Include = new() { { "game:rock-andesite", 1 } };
     Real.PrunedTerrainHeightReader reader =
-        new(new Real.TerrainHeightReader(loader, false), [], [andesite.Id]);
+        new(new Real.TerrainHeightReader(loader, false),
+            config.ResolveTerrainCategories(_resolver));
     Assert.AreEqual(2, ((ITerrainHeightReader)reader)
                            .GetHeight(_server.World.BlockAccessor, new(0, 0)));
     // The andesite was marked as non-solid.
@@ -140,7 +156,7 @@ public class PrunedTerrainHeightReader {
 
     FakeChunkLoader loader = new();
     Real.PrunedTerrainHeightReader reader =
-        new(new Real.TerrainHeightReader(loader, false), [], []);
+        new(new Real.TerrainHeightReader(loader, false), []);
     Assert.AreEqual(2, ((ITerrainHeightReader)reader)
                            .GetHeight(_server.World.BlockAccessor, new(0, 0)));
     Assert.AreEqual(0, ((ITerrainHeightReader)reader)

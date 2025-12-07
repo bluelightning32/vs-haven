@@ -52,14 +52,18 @@ public class BlockConfig {
     return result;
   }
 
-  /// <summary>
-  /// Return a resolved TerrainReplace with ResourceZoneClear merged in.
-  /// </summary>
-  /// <param name="resolver"></param>
-  /// <returns></returns>
-  public HashSet<int> ResolveTerrainReplace(MatchResolver resolver) {
-    BlockSet copy = TerrainReplace.Copy();
-    copy.Merge(ResourceZoneClear);
-    return copy.Resolve(resolver);
+  public Dictionary<int, TerrainCategory>
+  ResolveTerrainCategories(MatchResolver resolver) {
+    Dictionary<int, TerrainCategory> result = [];
+    foreach (int id in TerrainAvoid.Resolve(resolver)) {
+      result[id] = TerrainCategory.Nonsolid;
+    }
+    foreach (int id in TerrainReplace.Resolve(resolver)) {
+      result[id] = TerrainCategory.Skip;
+    }
+    foreach (int id in ResourceZoneClear.Resolve(resolver)) {
+      result[id] = TerrainCategory.Clear;
+    }
+    return result;
   }
 }

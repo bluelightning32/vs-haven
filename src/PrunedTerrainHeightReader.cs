@@ -6,19 +6,42 @@ using Vintagestory.API.MathTools;
 
 namespace Haven;
 
+/// <summary>
+/// How a block should be treated towards the terrain surface. The enum values
+/// are ordered from least hard to most hard.
+/// </summary>
+public enum TerrainCategory {
+  // Does not count towards the surface and should be removed
+  Clear,
+  // Does not count towards the surface, can be overwritten as necessary, but it
+  // should not be proactively removed. It will be elevated with the terrain.
+  Skip,
+  // Counts towards the surface level, but it is a non-solid surface.
+  Nonsolid,
+  // Counts towards the surface level.
+  Solid,
+  Default = Solid
+}
+
+public static class TerrainCategoryExtensions {
+  public static bool IsSurface(this TerrainCategory category) {
+    return category >= TerrainCategory.Nonsolid;
+  }
+
+  public static bool IsSolid(this TerrainCategory category) {
+    return category >= TerrainCategory.Solid;
+  }
+}
+
 public class PrunedTerrainHeightReader : ITerrainHeightReader {
   private readonly ITerrainHeightReader _source;
-  private readonly HashSet<int> _replace;
-  private readonly HashSet<int> _nonsolid;
+  private readonly Dictionary<int, TerrainCategory> _blocks;
 
   public PrunedTerrainHeightReader(ITerrainHeightReader source,
-                                   HashSet<int> replace,
-                                   HashSet<int> nonsolid) {
+                                   Dictionary<int, TerrainCategory> blocks) {
     _source = source;
-    _replace = replace;
-    _nonsolid = nonsolid;
-    _nonsolid ??= [];
-    _nonsolid.Add(0);
+    _blocks = blocks ?? [];
+    _blocks.TryAdd(0, TerrainCategory.Skip);
   }
 
   public (ushort[], bool[])
@@ -39,15 +62,24 @@ public class PrunedTerrainHeightReader : ITerrainHeightReader {
       for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++pos.X, ++offset) {
         pos.Y = heightsSource[offset];
         Block surface = accessor.GetBlock(pos);
-        while (pos.Y > 0 && _replace.Contains(surface.Id)) {
+        TerrainCategory category = GetCategory(surface.Id);
+        while (pos.Y > 0 && !category.IsSurface()) {
           --pos.Y;
           surface = accessor.GetBlock(pos);
+          category = GetCategory(surface.Id);
         }
         surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
-        solid[offset] = !_nonsolid.Contains(surface.Id);
+        solid[offset] = GetCategory(surface.Id).IsSolid();
         heights[offset] = (ushort)pos.Y;
       }
     }
     return (heights, solid);
+  }
+
+  public TerrainCategory GetCategory(int blockId) {
+    if (!_blocks.TryGetValue(blockId, out TerrainCategory category)) {
+      return TerrainCategory.Default;
+    }
+    return category;
   }
 }
