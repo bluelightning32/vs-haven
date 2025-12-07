@@ -67,22 +67,70 @@ public static class TerrainCategoryExtensions {
 /// before a Duplicate, Clear, or Skip block is found.
 /// </summary>
 public class PrunedTerrainHeightReader : ITerrainHeightReader {
-  private readonly ITerrainHeightReader _source;
+  public readonly ITerrainHeightReader Source;
   private readonly Dictionary<int, TerrainCategory> _terrainCategories;
   private readonly ushort _raise;
 
   public PrunedTerrainHeightReader(
       ITerrainHeightReader source,
       Dictionary<int, TerrainCategory> terrainCategories, ushort raise) {
-    _source = source;
+    Source = source;
     _terrainCategories = terrainCategories ?? [];
     _terrainCategories.TryAdd(0, TerrainCategory.Skip);
     _raise = raise;
   }
 
+  /// <summary>
+  /// Gets the block at the surface and the surface position
+  /// </summary>
+  /// <param name="accessor"></param>
+  /// <param name="pos">
+  /// On input, this is the surface according to the source reader. On output,
+  /// this is the surface after taking the Clear and Skip blocks into account.
+  /// </param>
+  /// <returns>the block at the new surface</returns>
+  internal Block GetSurfaceBeforeRaise(IBlockAccessor accessor, BlockPos pos) {
+    Block surface = accessor.GetBlock(pos);
+    TerrainCategory category = GetCategory(surface.Id);
+    while (pos.Y > 0 && !category.IsSurface()) {
+      --pos.Y;
+      surface = accessor.GetBlock(pos);
+      category = GetCategory(surface.Id);
+    }
+    return surface;
+  }
+
+  /// <summary>
+  /// Finds the block at or below the surface where the terrain raise should
+  /// start.
+  /// </summary>
+  /// <param name="accessor"></param>
+  /// <param name="pos">
+  /// On input, this is the surface according to GetSurfaceBeforeRaise. On
+  /// output, this is the raise start, if any.
+  /// </param>
+  /// <param name="surface">the block at the surface</param>
+  /// <returns>the block at the raise start, or null if the column should not be
+  /// raised</returns>
+  internal Block GetRaiseStart(IBlockAccessor accessor, BlockPos pos,
+                               Block surface) {
+    bool belowSurface = false;
+    TerrainCategory category = GetCategory(surface.Id);
+    while (pos.Y >= 0 && category.CanRaise()) {
+      if (category.IsRaiseStart(belowSurface)) {
+        return surface;
+      }
+      belowSurface = true;
+      --pos.Y;
+      surface = accessor.GetBlock(pos);
+      category = GetCategory(surface.Id);
+    }
+    return null;
+  }
+
   public (ushort[], bool[])
       GetHeightsAndSolid(IBlockAccessor accessor, int chunkX, int chunkZ) {
-    ushort[] heightsSource = _source.GetHeights(accessor, chunkX, chunkZ);
+    ushort[] heightsSource = Source.GetHeights(accessor, chunkX, chunkZ);
     if (heightsSource == null) {
       return (null, null);
     }
@@ -97,31 +145,13 @@ public class PrunedTerrainHeightReader : ITerrainHeightReader {
       pos.X = xOffset;
       for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++pos.X, ++offset) {
         pos.Y = heightsSource[offset];
-        Block surface = accessor.GetBlock(pos);
-        TerrainCategory category = GetCategory(surface.Id);
-        while (pos.Y > 0 && !category.IsSurface()) {
-          --pos.Y;
-          surface = accessor.GetBlock(pos);
-          category = GetCategory(surface.Id);
-        }
+        Block surface = GetSurfaceBeforeRaise(accessor, pos);
+
         Block surfaceSolid = accessor.GetBlock(pos, BlockLayersAccess.Solid);
         solid[offset] = GetCategory(surfaceSolid.Id).IsSolid();
         heights[offset] = (ushort)pos.Y;
 
-        bool canRaise = false;
-        bool belowSurface = false;
-        while (pos.Y >= 0 && category.CanRaise()) {
-          if (category.IsRaiseStart(belowSurface)) {
-            canRaise = true;
-            break;
-          }
-          belowSurface = true;
-          --pos.Y;
-          surface = accessor.GetBlock(pos);
-          category = GetCategory(surface.Id);
-        }
-
-        if (canRaise) {
+        if (GetRaiseStart(accessor, pos, surface) != null) {
           heights[offset] += _raise;
         }
       }

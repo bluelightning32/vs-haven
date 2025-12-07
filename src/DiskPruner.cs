@@ -35,8 +35,8 @@ public class DiskPruner : IWorldGenerator {
   private DiskPruner() {}
 
   public DiskPruner(IChunkLoader loader, TerrainSurvey terrain,
-                    PrunedTerrainHeightReader pruneConfig,
-                    Vec2i center, int radius) {
+                    PrunedTerrainHeightReader pruneConfig, Vec2i center,
+                    int radius) {
     _loader = loader;
     _terrain = terrain;
     _pruneConfig = pruneConfig;
@@ -67,11 +67,11 @@ public class DiskPruner : IWorldGenerator {
     }
   }
 
-  private void ProcessColumn(IBlockAccessor accessor, IMapChunk chunk,
+  private void ProcessColumn(IBlockAccessor accessor, ushort[] sourceHeights,
                              ChunkColumnSurvey survey, BlockPos pos,
                              int offset) {
     int surveyHeight = survey.Heights[offset];
-    int mapHeight = chunk.RainHeightMap[offset];
+    int mapHeight = sourceHeights[offset];
     for (int y = mapHeight; y > surveyHeight; --y) {
       pos.Y = y;
       int existing = accessor.GetBlockId(pos);
@@ -93,8 +93,9 @@ public class DiskPruner : IWorldGenerator {
       if (_finishedChunks.Contains((chunkX, chunkZ))) {
         return;
       }
-      IMapChunk chunk = accessor.GetMapChunk(chunkX, chunkZ);
-      if (chunk == null) {
+      ushort[] sourceHeights =
+          _pruneConfig.Source.GetHeights(accessor, chunkX, chunkZ);
+      if (sourceHeights == null) {
         incomplete = true;
         _loader.LoadChunkColumn(chunkX, chunkZ);
         return;
@@ -107,7 +108,7 @@ public class DiskPruner : IWorldGenerator {
         for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
           pos.X = chunkXOffset + x;
           pos.Z = chunkZOffset + z;
-          ProcessColumn(accessor, chunk, survey, pos, offset);
+          ProcessColumn(accessor, sourceHeights, survey, pos, offset);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
@@ -119,8 +120,9 @@ public class DiskPruner : IWorldGenerator {
       if (_finishedChunks.Contains((chunkX, chunkZ))) {
         return;
       }
-      IMapChunk chunk = accessor.GetMapChunk(chunkX, chunkZ);
-      if (chunk == null) {
+      ushort[] sourceHeights =
+          _pruneConfig.Source.GetHeights(accessor, chunkX, chunkZ);
+      if (sourceHeights == null) {
         incomplete = true;
         _loader.LoadChunkColumn(chunkX, chunkZ);
         return;
@@ -142,7 +144,7 @@ public class DiskPruner : IWorldGenerator {
           }
           pos.X = chunkXOffset + x;
           pos.Z = chunkZOffset + z;
-          ProcessColumn(accessor, chunk, survey, pos, offset);
+          ProcessColumn(accessor, sourceHeights, survey, pos, offset);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
