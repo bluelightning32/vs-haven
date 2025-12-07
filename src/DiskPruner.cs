@@ -67,6 +67,20 @@ public class DiskPruner : IWorldGenerator {
     }
   }
 
+  private void ProcessColumn(IBlockAccessor accessor, IMapChunk chunk,
+                             ChunkColumnSurvey survey, BlockPos pos,
+                             int offset) {
+    int surveyHeight = survey.Heights[offset];
+    int mapHeight = chunk.RainHeightMap[offset];
+    for (int y = mapHeight; y > surveyHeight; --y) {
+      pos.Y = y;
+      int existing = accessor.GetBlockId(pos);
+      if (GetCategory(existing).ShouldClear()) {
+        accessor.SetBlock(0, pos);
+      }
+    }
+  }
+
   public bool Generate(IBlockAccessor accessor) {
     if (_finishedRadius == _activeRadius) {
       return true;
@@ -91,17 +105,9 @@ public class DiskPruner : IWorldGenerator {
       BlockPos pos = new(Dimensions.NormalWorld);
       for (int z = 0; z < GlobalConstants.ChunkSize; ++z) {
         for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
-          int surveyHeight = survey.Heights[offset];
-          int mapHeight = chunk.RainHeightMap[offset];
-          for (int y = mapHeight; y > surveyHeight; --y) {
-            pos.X = chunkXOffset + x;
-            pos.Y = y;
-            pos.Z = chunkZOffset + z;
-            int existing = accessor.GetBlockId(pos);
-            if (GetCategory(existing).ShouldClear()) {
-              accessor.SetBlock(0, pos);
-            }
-          }
+          pos.X = chunkXOffset + x;
+          pos.Z = chunkZOffset + z;
+          ProcessColumn(accessor, chunk, survey, pos, offset);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
@@ -134,17 +140,9 @@ public class DiskPruner : IWorldGenerator {
           if (distSq > maxRadiusSq || distSq <= minRadiusSq) {
             continue;
           }
-          int surveyHeight = survey.Heights[offset];
-          int mapHeight = chunk.RainHeightMap[offset];
-          for (int y = mapHeight; y > surveyHeight; --y) {
-            pos.X = chunkXOffset + x;
-            pos.Y = y;
-            pos.Z = chunkZOffset + z;
-            int existing = accessor.GetBlockId(pos);
-            if (GetCategory(existing).ShouldClear()) {
-              accessor.SetBlock(0, pos);
-            }
-          }
+          pos.X = chunkXOffset + x;
+          pos.Z = chunkZOffset + z;
+          ProcessColumn(accessor, chunk, survey, pos, offset);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
