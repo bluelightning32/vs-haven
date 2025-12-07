@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 using Vintagestory.API.Common;
+using Vintagestory.ServerMods;
 
 namespace Haven;
 
@@ -35,6 +36,18 @@ public class BlockSet {
   /// </summary>
   [JsonProperty]
   public Dictionary<AssetLocation, int> Exclude = [];
+
+  /// <summary>
+  /// Performs a shallow copy. The dictionaries are shallow copied.
+  /// </summary>
+  /// <returns>the copy</returns>
+  public BlockSet Copy() {
+    return new() {
+      IncludeReplaceable = IncludeReplaceable,
+      Include = new(Include),
+      Exclude = new(Exclude),
+    };
+  }
 
   /// <summary>
   /// Merge the other block set into this one

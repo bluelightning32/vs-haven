@@ -1,15 +1,4 @@
 {
-  terrainReplace: {
-    include: {
-      "*:leavesbranchy-*" : 1,
-      "*:leavesbranchystatic-*" : 1,
-      "*:bambooleaves-*" : 1,
-      "*:leaves-*" : 1,
-      "*:log-*" : 1,
-      "haven:branches-*": 1,
-      "game:wildvine-*" : 1
-    }
-  },
   resourceZoneClear: {
     include: {
       "*:leavesbranchy-*" : 1,

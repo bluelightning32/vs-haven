@@ -51,4 +51,15 @@ public class BlockConfig {
     }
     return result;
   }
+
+  /// <summary>
+  /// Return a resolved TerrainReplace with ResourceZoneClear merged in.
+  /// </summary>
+  /// <param name="resolver"></param>
+  /// <returns></returns>
+  public HashSet<int> ResolveTerrainReplace(MatchResolver resolver) {
+    BlockSet copy = TerrainReplace.Copy();
+    copy.Merge(ResourceZoneClear);
+    return copy.Resolve(resolver);
+  }
 }
