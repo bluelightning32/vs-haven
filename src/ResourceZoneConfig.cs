@@ -16,6 +16,8 @@ public class ResourceZoneConfig {
   public double MaxRoughnessArea = 0.5;
   [JsonProperty]
   public double MinLandRatio = 0.9;
+  [JsonProperty]
+  public ushort TerrainRaise = 0;
 
   private IWorldAccessor _worldForResolve = null;
   private ICollection<Structure> _structures = null;

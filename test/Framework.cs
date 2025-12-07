@@ -35,7 +35,8 @@ public class Framework {
         new() { [AssetCategory.itemtypes] = new() { "fruit.json" },
                 [AssetCategory.blocktypes] =
                     new() { "egg.json", "rock.json", "tallgrass.json",
-                            "water.json", "soil.json", "meta.json" },
+                            "water.json", "soil.json", "meta.json",
+                            "planks.json" },
                 [AssetCategory.recipes] = new() {} };
     Server = ServerApiWithAssets.Create(allow);
   }

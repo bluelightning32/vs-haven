@@ -14,13 +14,19 @@ public enum TerrainCategory {
   // Does not count towards the surface and should be removed
   Clear,
   // Does not count towards the surface, can be overwritten as necessary, but it
-  // should not be proactively removed. It will be elevated with the terrain.
+  // should not be proactively removed. It will be raised with the terrain.
   Skip,
-  // Counts towards the surface level, but it is a non-solid surface.
+  // Counts towards the surface level, but it is a non-solid surface. Can be
+  // raised.
   Nonsolid,
-  // Counts towards the surface level.
+  // Counts towards the surface level. Can be raised.
   Solid,
-  Default = Solid
+  // Counts towards the surface level. Can be duplicated to raised the terrain.
+  // Solid.
+  Duplicate,
+  // Counts towards the surface level. Cannot be raised.
+  SolidHold,
+  Default = SolidHold
 }
 
 public static class TerrainCategoryExtensions {
@@ -35,17 +41,43 @@ public static class TerrainCategoryExtensions {
   public static bool IsSolid(this TerrainCategory category) {
     return category >= TerrainCategory.Solid;
   }
+
+  public static bool CanRaise(this TerrainCategory category) {
+    return category < TerrainCategory.SolidHold;
+  }
+
+  public static bool IsRaiseStart(this TerrainCategory category,
+                                  bool belowSurface) {
+    return category == TerrainCategory.Duplicate ||
+           (belowSurface && !IsSurface(category));
+  }
 }
 
+/// <summary>
+/// Reports the height of the terrain as if DiskPruner ran.
+///
+/// It roughly follows these steps to determine the terrain height.
+/// 1. Start with the height reported by the source terrain height reader.
+/// 2. Reduce the height as long as the surface block is a Clear or Skip. This
+/// calculates the result of pruning the surface vegetation.
+/// 3. Determine whether the surface is solid or not, based on whether the block
+/// is in the Nonsolid category.
+/// 4. Raise the terrain if there is a block in the Duplicate category below the
+/// surface. This raise fails if a SolidHold block is found below the surface
+/// before a Duplicate, Clear, or Skip block is found.
+/// </summary>
 public class PrunedTerrainHeightReader : ITerrainHeightReader {
   private readonly ITerrainHeightReader _source;
-  private readonly Dictionary<int, TerrainCategory> _blocks;
+  private readonly Dictionary<int, TerrainCategory> _terrainCategories;
+  private readonly ushort _raise;
 
-  public PrunedTerrainHeightReader(ITerrainHeightReader source,
-                                   Dictionary<int, TerrainCategory> blocks) {
+  public PrunedTerrainHeightReader(
+      ITerrainHeightReader source,
+      Dictionary<int, TerrainCategory> terrainCategories, ushort raise) {
     _source = source;
-    _blocks = blocks ?? [];
-    _blocks.TryAdd(0, TerrainCategory.Skip);
+    _terrainCategories = terrainCategories ?? [];
+    _terrainCategories.TryAdd(0, TerrainCategory.Skip);
+    _raise = raise;
   }
 
   public (ushort[], bool[])
@@ -72,16 +104,34 @@ public class PrunedTerrainHeightReader : ITerrainHeightReader {
           surface = accessor.GetBlock(pos);
           category = GetCategory(surface.Id);
         }
-        surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
-        solid[offset] = GetCategory(surface.Id).IsSolid();
+        Block surfaceSolid = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+        solid[offset] = GetCategory(surfaceSolid.Id).IsSolid();
         heights[offset] = (ushort)pos.Y;
+
+        bool canRaise = false;
+        bool belowSurface = false;
+        while (pos.Y >= 0 && category.CanRaise()) {
+          if (category.IsRaiseStart(belowSurface)) {
+            canRaise = true;
+            break;
+          }
+          belowSurface = true;
+          --pos.Y;
+          surface = accessor.GetBlock(pos);
+          category = GetCategory(surface.Id);
+        }
+
+        if (canRaise) {
+          heights[offset] += _raise;
+        }
       }
     }
     return (heights, solid);
   }
 
   public TerrainCategory GetCategory(int blockId) {
-    if (!_blocks.TryGetValue(blockId, out TerrainCategory category)) {
+    if (!_terrainCategories.TryGetValue(blockId,
+                                        out TerrainCategory category)) {
       return TerrainCategory.Default;
     }
     return category;

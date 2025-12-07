@@ -51,7 +51,8 @@ public class HavenSystem : ModSystem {
                   ChunksLoaded);
     _terrain = new PrunedTerrainHeightReader(
         new TerrainHeightReader(_loader, false),
-        ServerConfig.ResourceZone.TerrainCategories);
+        ServerConfig.ResourceZone.TerrainCategories,
+        ServerConfig.ResourceZone.TerrainRaise);
 
     // This is normally set by GenStructures.initWorldGen, but that isn't called
     // in flat worlds. So set the filler block directly here instead.
