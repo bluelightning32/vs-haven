@@ -273,7 +273,7 @@ public class DiskPruner : IWorldGenerator {
       // give up on updating the block entity for the old block.
       HavenSystem.Logger.Warning(
           "A block of {0} was placed at {1} before the block entity for " +
-          "block {2} could be restored.",
+              "block {2} could be restored.",
           block.Code, pos, treeBlockCode);
       return true;
     }
@@ -282,7 +282,7 @@ public class DiskPruner : IWorldGenerator {
       // entity.
       HavenSystem.Logger.Error(
           "Tried to restore a block entity for block {0}, but that block " +
-          "does not have a block entity.",
+              "does not have a block entity.",
           block.Code);
       return true;
     }
