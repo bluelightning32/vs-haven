@@ -91,11 +91,11 @@ public class HavenRegionIntersection {
     return GetRegions(Center, Radius, regionSize);
   }
 
-  public bool Contains(BlockPos pos, int havenAboveHeight,
-                       int havenBelowHeight) {
+  public bool Contains(BlockPos pos, int radius, int havenBelowHeight,
+                       int havenAboveHeight) {
     int dx = pos.X - Center.X;
     int dz = pos.Z - Center.Z;
-    if (dx * dx + dz * dz > Radius * Radius) {
+    if (dx * dx + dz * dz > radius * radius) {
       return false;
     }
     if (pos.Y < Center.Y - havenBelowHeight) {
@@ -105,5 +105,16 @@ public class HavenRegionIntersection {
       return false;
     }
     return true;
+  }
+
+  public bool Contains(BlockPos pos, int havenBelowHeight,
+                       int havenAboveHeight) {
+    return Contains(pos, Radius, havenBelowHeight, havenAboveHeight);
+  }
+
+  public bool InSafeZone(BlockPos pos, int havenBelowHeight,
+                         int havenAboveHeight) {
+    return Contains(pos, ResourceZoneRadius, havenBelowHeight,
+                    havenAboveHeight);
   }
 }

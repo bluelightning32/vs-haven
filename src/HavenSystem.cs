@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Haven.BlockBehaviors;
+using Haven.EntityBehaviors;
 
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
@@ -17,10 +18,12 @@ public class HavenRegionIntersectionUpdate {
 }
 
 public class HavenSystem : ModSystem {
-  private ICoreAPI _api;
-
+  private static IModLoader s_lastLoader;
+  private static HavenSystem s_instance;
   public static string Domain { get; private set; }
   public static ILogger Logger { get; private set; }
+
+  private ICoreAPI _api;
   public ServerConfig ServerConfig { get; private set; }
   private BlockConfig _blockConfig = null;
   public readonly CallbackScheduler Scheduler = new();
@@ -49,6 +52,8 @@ public class HavenSystem : ModSystem {
         nameof(BlockEntityBehaviors.Dispenser),
         typeof(BlockEntityBehaviors.Dispenser));
     api.RegisterBlockClass(nameof(Blocks.Delegate), typeof(Blocks.Delegate));
+
+    api.RegisterEntityBehaviorClass("safezone", typeof(SafeZone));
 
     Scheduler.Start(api);
     api.Event.MapRegionLoaded += MapRegionLoaded;
@@ -352,5 +357,16 @@ public class HavenSystem : ModSystem {
       sapi.WorldManager.SaveGame.StoreData("haven:intersectionupdates",
                                            _pendingIntersectionUpdates);
     }
+  }
+
+  public static HavenSystem GetSystem(IModLoader loader) {
+    // IModLoader.GetModSystem is a little slow, because it walks all the mods.
+    // So cache the result.
+    if (loader == s_lastLoader) {
+      return s_instance;
+    }
+    s_lastLoader = loader;
+    s_instance = loader.GetModSystem<HavenSystem>();
+    return s_instance;
   }
 }
