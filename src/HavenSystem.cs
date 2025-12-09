@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 
 using Haven.BlockBehaviors;
 using Haven.EntityBehaviors;
@@ -82,6 +83,7 @@ public class HavenSystem : ModSystem {
 
     sapi.Event.SaveGameLoaded += OnSaveGameLoading;
     sapi.Event.GameWorldSave += OnSaveGameSaving;
+    sapi.Event.OnTestBlockAccess += OnTestBlockAccess;
   }
 
   public override void Dispose() {
@@ -368,5 +370,24 @@ public class HavenSystem : ModSystem {
     s_lastLoader = loader;
     s_instance = loader.GetModSystem<HavenSystem>();
     return s_instance;
+  }
+
+  private EnumWorldAccessResponse
+  OnTestBlockAccess(IPlayer player, BlockSelection blockSel,
+                    EnumBlockAccessFlags accessType, ref string claimant,
+                    EnumWorldAccessResponse input) {
+    HavenRegionIntersection intersection =
+        GetHavenIntersection(blockSel.Position);
+    if (intersection == null) {
+      return input;
+    }
+    if (accessType != EnumBlockAccessFlags.BuildOrBreak) {
+      return input;
+    }
+    if (player.WorldData.CurrentGameMode == EnumGameMode.Creative) {
+      return input;
+    }
+    claimant = "custommessage-haven";
+    return EnumWorldAccessResponse.DeniedByMod;
   }
 }

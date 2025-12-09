@@ -10,4 +10,8 @@
   "haven:block-quarry-*": "Stone dispenser",
   "haven:block-tallplant-coopersreed-*-free": "Cattails dispenser",
   "haven:block-tallplant-papyrus-*-free": "Papyrus dispenser",
+
+  // Triggered when a player tries to place a block in the haven.
+  "ingameerror-noprivilege-buildbreak-haven": "This ground is protected by a haven.",
+  "game:ingameerror-noprivilege-buildbreak-haven": "This ground is protected by a haven."
 }

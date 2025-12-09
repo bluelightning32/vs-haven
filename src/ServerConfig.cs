@@ -14,7 +14,7 @@ public class ServerConfig {
   public int HavenBelowHeight = 50;
 
   [JsonProperty]
-  public int HavenRadius = 100;
+  public int HavenRadius = 30;
 
   [JsonProperty]
   public int BlocksPerPlot = 10;
