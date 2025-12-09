@@ -14,5 +14,10 @@
       // Allow soil without grass to be duplicated in order to raise the terrain.
       "*:soil-*-none" : 1
     }
+  },
+  cliff: {
+    include: {
+      "*:soil-*" : 1
+    }
   }
 }

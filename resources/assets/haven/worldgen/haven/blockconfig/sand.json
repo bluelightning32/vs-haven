@@ -3,5 +3,10 @@
     include: {
       "*:sand-*" : 1
     }
+  },
+  cliff: {
+    include: {
+      "*:sand-*" : 1
+    }
   }
 }

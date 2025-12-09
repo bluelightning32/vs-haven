@@ -43,6 +43,14 @@ public class BlockConfig {
   /// </summary>
   [JsonProperty]
   public BlockSet TerrainRaiseStart = new();
+  /// <summary>
+  /// If there are two of these blocks stacked up, then it is marked as a cliff.
+  /// The player can place another block (from this set) next to the cliff to
+  /// smooth it out, even if the haven otherwise would prevent the block
+  /// placement.
+  /// </summary>
+  [JsonProperty]
+  public BlockSet Cliff = new();
 
   public void Merge(BlockConfig other) {
     TerrainReplace.Merge(other.TerrainReplace);
@@ -50,6 +58,7 @@ public class BlockConfig {
     TerrainAvoid.Merge(other.TerrainAvoid);
     TerrainSolid.Merge(other.TerrainSolid);
     TerrainRaiseStart.Merge(other.TerrainRaiseStart);
+    Cliff.Merge(other.Cliff);
   }
 
   public static BlockConfig Load(ILogger logger, IAssetManager assetManager) {
@@ -86,5 +95,9 @@ public class BlockConfig {
       result[id] = TerrainCategory.Clear;
     }
     return result;
+  }
+
+  public HashSet<int> ResolveCliff(MatchResolver resolver) {
+    return Cliff.Resolve(resolver);
   }
 }

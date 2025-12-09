@@ -27,6 +27,7 @@ public class HavenSystem : ModSystem {
   private ICoreAPI _api;
   public ServerConfig ServerConfig { get; private set; }
   private BlockConfig _blockConfig = null;
+  private HashSet<int> _cliffBlocks = [];
   public readonly CallbackScheduler Scheduler = new();
 
   private IBlockAccessorRevertable _revertable = null;
@@ -147,8 +148,8 @@ public class HavenSystem : ModSystem {
       api.StoreModConfig(ServerConfig, configFile);
     }
     _blockConfig = BlockConfig.Load(Logger, api.Assets);
-
     ServerConfig.Resolve(Logger, api.World, resolver, _blockConfig);
+    _cliffBlocks = _blockConfig.ResolveCliff(resolver);
   }
 
   private void ChunksLoaded(List<IWorldChunk> list) {
@@ -387,7 +388,52 @@ public class HavenSystem : ModSystem {
     if (player.WorldData.CurrentGameMode == EnumGameMode.Creative) {
       return input;
     }
+    // The build and break flags are combined together. This handler does not
+    // get any direct indication on whether it is a build or break event.
+    // Instead, it is inferred based on whether the left mouse is down (needed
+    // to break blocks).
+    //
+    // The first time this is called for a place block event, blockSel.DidOffset
+    // will be true. However, if that first check succeeds, a second check will
+    // be run from Block.CanPlaceBlock, and it will have DidOffset to false. So
+    // DidOffset cannot be used to reliably detect block placement events.
+    if (accessType == EnumBlockAccessFlags.BuildOrBreak &&
+        !player.Entity.Controls.LeftMouseDown) {
+      // This is probably placing a block.
+      Block placing = player.Entity.ActiveHandItemSlot.Itemstack?.Block;
+      if (placing != null &&
+          IsBlockPlacementAllowed(intersection, player, blockSel.Position,
+                                  placing)) {
+        return input;
+      }
+    }
     claimant = "custommessage-haven";
     return EnumWorldAccessResponse.DeniedByMod;
+  }
+
+  private bool IsBlockPlacementAllowed(HavenRegionIntersection intersection,
+                                       IPlayer player, BlockPos position,
+                                       Block placing) {
+    if (IsCliffBlock(placing)) {
+      foreach (BlockFacing facing in BlockFacing.HORIZONTALS) {
+        BlockPos test = position.AddCopy(facing);
+
+        if (!IsCliffBlock(_api.World.BlockAccessor.GetBlock(test))) {
+          continue;
+        }
+        if (!IsCliffBlock(_api.World.BlockAccessor.GetBlockAbove(test))) {
+          continue;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private bool IsCliffBlock(Block block) {
+    if (block == null) {
+      return false;
+    }
+    return _cliffBlocks.Contains(block.Id);
   }
 }

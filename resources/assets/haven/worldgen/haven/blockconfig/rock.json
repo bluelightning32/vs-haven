@@ -4,5 +4,11 @@
       "*:rock-*" : 1,
       "*:crackedrock-*" : 1
     }
+  },
+  cliff: {
+    include: {
+      "*:rock-*" : 1,
+      "*:crackedrock-*" : 1
+    }
   }
 }

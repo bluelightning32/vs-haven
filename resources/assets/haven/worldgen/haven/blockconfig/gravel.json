@@ -3,5 +3,10 @@
     include: {
       "*:gravel-*" : 1
     }
+  },
+  cliff: {
+    include: {
+      "*:gravel-*" : 1
+    }
   }
 }
