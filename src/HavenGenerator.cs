@@ -90,10 +90,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
       }
       int oldRadius = _radius;
       _radius = int.Max(_radius, (int)_resourceZone.Radius);
-      HavenRegionIntersection intersection =
-          new() { Center = _resourceZone.Center,
-                  ResourceZoneRadius = (int)_resourceZone.Radius,
-                  Radius = _radius };
+      HavenRegionIntersection intersection = RegionIntersection;
       _havenUpdate.Invoke(_resourceZone.Center, oldRadius, intersection);
     }
     return LocationResult.Accepted;
@@ -116,10 +113,7 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
         return true;
       }
       _resourceZone.Center = _centerLocator.Center;
-      HavenRegionIntersection intersection =
-          new() { Center = _resourceZone.Center,
-                  ResourceZoneRadius = (int)_resourceZone.Radius,
-                  Radius = _radius };
+      HavenRegionIntersection intersection = RegionIntersection;
       _havenUpdate.Invoke(null, 0, intersection);
       _pruneResourceZone =
           new(WorldForResolve, Loader, Terrain, _reader,
@@ -169,6 +163,15 @@ public class HavenGenerator : IWorldGenerator, ISchematicPlacerSupervisor {
     _centerLocator.Restore(logger, Terrain);
     if (_pruneResourceZone != null) {
       _pruneResourceZone.Restore(worldForResolve, Loader, Terrain, reader);
+    }
+  }
+
+  public HavenRegionIntersection RegionIntersection {
+    get {
+      return new() { Center = _resourceZone.Center,
+                     ResourceZoneRadius = (int)_resourceZone.Radius,
+                     SafeZoneRadius = (int)_resourceZone.Radius,
+                     Radius = _radius };
     }
   }
 }

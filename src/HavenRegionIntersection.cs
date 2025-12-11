@@ -16,6 +16,8 @@ public class HavenRegionIntersection {
   public int ResourceZoneRadius;
   [ProtoMember(3)]
   public int Radius;
+  [ProtoMember(4)]
+  public int SafeZoneRadius = 0;
 
   public HavenRegionIntersection Copy() {
     byte[] data = SerializerUtil.Serialize(this);
@@ -23,7 +25,7 @@ public class HavenRegionIntersection {
   }
 
   public override string ToString() {
-    return $"center: {Center}, resourceZoneRadius: {ResourceZoneRadius}, radius: {Radius}";
+    return $"center: {Center}, resourceZoneRadius: {ResourceZoneRadius}, safeZoneRadius: {SafeZoneRadius}, radius: {Radius}";
   }
 
   public static bool CircleIntersectsRect(int cx, int cy, int radius,
@@ -114,7 +116,27 @@ public class HavenRegionIntersection {
 
   public bool InSafeZone(BlockPos pos, int havenBelowHeight,
                          int havenAboveHeight) {
+    return Contains(pos, SafeZoneRadius, havenBelowHeight, havenAboveHeight);
+  }
+
+  public bool InResourceZone(BlockPos pos, int havenBelowHeight,
+                             int havenAboveHeight) {
     return Contains(pos, ResourceZoneRadius, havenBelowHeight,
                     havenAboveHeight);
+  }
+
+  [ProtoAfterDeserialization]
+  private void AfterDeserialization() {
+    if (SafeZoneRadius == 0) {
+      SafeZoneRadius = ResourceZoneRadius;
+    }
+  }
+
+  public bool InPlotZone(BlockPos position, int havenBelowHeight,
+                         int havenAboveHeight) {
+    if (!InSafeZone(position, havenBelowHeight, havenAboveHeight)) {
+      return false;
+    }
+    return !InResourceZone(position, havenBelowHeight, havenAboveHeight);
   }
 }

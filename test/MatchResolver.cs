@@ -6,7 +6,7 @@ using Vintagestory.API.Common;
 
 namespace Haven.Test;
 
-using Real = Haven;
+using Real = global::Haven;
 
 [PrefixTestClass]
 public class MatchResolver {

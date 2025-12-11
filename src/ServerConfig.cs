@@ -18,11 +18,22 @@ public class ServerConfig {
 
   [JsonProperty]
   public int BlocksPerPlot = 10;
+  /// <summary>
+  /// The number of blocks between plots. This setting exists to ensure there is
+  /// enough space to walk to and from the haven even if players put fences in
+  /// their plots.
+  /// </summary>
   [JsonProperty]
-  public string PlotBlockDenylist = "";
+  public int PlotBorderWidth = 2;
 
   [JsonProperty]
   public ResourceZoneConfig ResourceZone = new();
+
+  /// <summary>
+  /// The number of plots each player can claim in each haven
+  /// </summary>
+  [JsonProperty]
+  public int PlotsPerPlayer = 1;
 
   public void Resolve(ILogger logger, IWorldAccessor worldForResolve,
                       MatchResolver resolver, BlockConfig config) {

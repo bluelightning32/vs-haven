@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
-using System.Security.Claims;
 
 using Haven.BlockBehaviors;
 using Haven.EntityBehaviors;
@@ -16,6 +16,11 @@ namespace Haven;
 public class HavenRegionIntersectionUpdate {
   public BlockPos OldCenter;
   public HavenRegionIntersection New;
+}
+
+public class HavenUpdate {
+  public BlockPos OldCenter;
+  public Haven New;
 }
 
 public class HavenSystem : ModSystem {
@@ -37,8 +42,11 @@ public class HavenSystem : ModSystem {
   private ServerCommands _commands = null;
   private readonly Dictionary<Vec2i, List<HavenRegionIntersection>>
       _loadedHavenIntersections = [];
+  private readonly Dictionary<Vec2i, List<Haven>> _loadedHavens = [];
   private readonly Dictionary<Vec2i, List<HavenRegionIntersectionUpdate>>
       _pendingIntersectionUpdates = [];
+  private readonly Dictionary<Vec2i, List<HavenUpdate>> _pendingHavenUpdates =
+      [];
 
   public override double ExecuteOrder() { return 1.0; }
 
@@ -117,6 +125,9 @@ public class HavenSystem : ModSystem {
         if (_activeRevertableGenerator.Commit(_revertable)) {
           Logger.Build(
               $"Manual haven generation done with center at {_activeRevertableGenerator.Center}.");
+          RegisterHavenOnly(new Haven(
+              _activeRevertableGenerator.RegionIntersection,
+              ServerConfig.PlotBorderWidth, ServerConfig.BlocksPerPlot));
           _activeRevertableGenerator = null;
         }
       }
@@ -158,14 +169,58 @@ public class HavenSystem : ModSystem {
   }
 
   private void MapRegionLoaded(Vec2i mapCoord, IMapRegion region) {
+    if (_api is not ICoreServerAPI sapi) {
+      Logger.Error("MapRegionLoaded called on the client side");
+      return;
+    }
     List<HavenRegionIntersection> intersections =
         region.GetModdata<List<HavenRegionIntersection>>("haven:intersections");
     intersections ??= [];
+    List<Haven> havens = region.GetModdata<List<Haven>>("haven:havens");
+    havens ??= [];
     lock (_pendingIntersectionUpdates) {
       if (_pendingIntersectionUpdates.TryGetValue(
               mapCoord, out List<HavenRegionIntersectionUpdate> updates)) {
         ApplyUpdatesForRegion(region, intersections, updates);
         _pendingIntersectionUpdates.Remove(mapCoord);
+      }
+      if (_pendingHavenUpdates.TryGetValue(
+              mapCoord, out List<HavenUpdate> havenUpdates)) {
+        ApplyUpdatesForRegion(region, havens, havenUpdates);
+        _pendingHavenUpdates.Remove(mapCoord);
+      }
+    }
+    // Look for any haven intersections that are in the map region (and are thus
+    // authoritative) but are missing the corresponding haven. This can happen
+    // when upgrading from version 0.4.0 or older.
+    foreach (HavenRegionIntersection intersection in intersections) {
+      if (intersection.Center.X / sapi.WorldManager.RegionSize != mapCoord.X) {
+        continue;
+      }
+      if (intersection.Center.Z / sapi.WorldManager.RegionSize != mapCoord.Y) {
+        continue;
+      }
+      if (_activeRevertableGenerator != null &&
+          _activeRevertableGenerator.Center == intersection.Center) {
+        // This haven is still being generated. It will create the haven object
+        // when it's done.
+        continue;
+      }
+      if (havens.Any((Haven haven) => haven.GetIntersection().Center ==
+                                      intersection.Center)) {
+        // This haven intersection already has a haven.
+        continue;
+      }
+      Logger.Warning(
+          $"Creating missing haven object for haven intersection at {intersection.Center}");
+      havens.Add(new(intersection, ServerConfig.PlotBorderWidth,
+                     ServerConfig.BlocksPerPlot));
+    }
+    foreach (Haven haven in havens) {
+      if (haven.TryExpand(ServerConfig.PlotBorderWidth,
+                          ServerConfig.BlocksPerPlot)) {
+        UpdateHaven(haven.GetIntersection().Center,
+                    haven.GetIntersection().Radius, haven);
       }
     }
     if (intersections.Count > 0) {
@@ -173,10 +228,16 @@ public class HavenSystem : ModSystem {
     } else {
       _loadedHavenIntersections.Remove(mapCoord);
     }
+    if (havens.Count > 0) {
+      _loadedHavens[mapCoord] = havens;
+    } else {
+      _loadedHavens.Remove(mapCoord);
+    }
   }
 
   private void MapRegionUnloaded(Vec2i mapCoord, IMapRegion region) {
     _loadedHavenIntersections.Remove(mapCoord);
+    _loadedHavens.Remove(mapCoord);
   }
 
   /// <summary>
@@ -219,7 +280,7 @@ public class HavenSystem : ModSystem {
         bool found = false;
         if (oldCenter != null) {
           foreach (HavenRegionIntersectionUpdate update in updates) {
-            if (update.New.Center == oldCenter) {
+            if (update.New != null && update.New.Center == oldCenter) {
               found = true;
               update.New = intersection;
               break;
@@ -234,12 +295,56 @@ public class HavenSystem : ModSystem {
     }
   }
 
-  public void RegisterHavenIntersection(HavenRegionIntersection intersection) {
-    UpdateHavenIntersection(null, 0, intersection);
+  public void UpdateHaven(BlockPos oldCenter, int oldRadius, Haven haven) {
+    if (_api is not ICoreServerAPI sapi) {
+      Logger.Error("UpdateHaven called on the client side");
+      return;
+    }
+    HashSet<Vec2i> updateRegions = [];
+    if (haven != null) {
+      updateRegions.UnionWith(
+          haven.GetIntersection().GetRegions(sapi.WorldManager.RegionSize));
+    }
+    if (oldCenter != null) {
+      updateRegions.UnionWith(HavenRegionIntersection.GetRegions(
+          oldCenter, oldRadius, sapi.WorldManager.RegionSize));
+    }
+
+    lock (_pendingHavenUpdates) {
+      foreach (Vec2i region in updateRegions) {
+        if (!_pendingHavenUpdates.TryGetValue(region,
+                                              out List<HavenUpdate> updates)) {
+          updates = [];
+          _pendingHavenUpdates.Add(region, updates);
+        }
+        bool found = false;
+        if (oldCenter != null) {
+          foreach (HavenUpdate update in updates) {
+            if (update.New != null &&
+                update.New.GetIntersection().Center == oldCenter) {
+              found = true;
+              update.New = haven;
+              break;
+            }
+          }
+        }
+        if (!found) {
+          updates.Add(new() { OldCenter = oldCenter, New = haven });
+        }
+      }
+      sapi.Event.EnqueueMainThreadTask(ProcessUpdates, "haven:processupdates");
+    }
   }
 
-  public void
-  UnregisterHavenIntersection(HavenRegionIntersection intersection) {
+  private void RegisterHavenOnly(Haven haven) { UpdateHaven(null, 0, haven); }
+
+  public void RegisterHaven(Haven haven) {
+    UpdateHavenIntersection(null, 0, haven.GetIntersection());
+    UpdateHaven(null, 0, haven);
+  }
+
+  public void UnregisterHaven(HavenRegionIntersection intersection) {
+    UpdateHaven(intersection.Center, intersection.Radius, null);
     UpdateHavenIntersection(intersection.Center, intersection.Radius, null);
   }
 
@@ -273,9 +378,38 @@ public class HavenSystem : ModSystem {
     return best;
   }
 
+  /// <summary>
+  /// Find the haven that contains the given location
+  /// </summary>
+  /// <param name="pos">location to find a intersecting haven</param>
+  /// <returns>the haven</returns>
+  public Haven GetHaven(BlockPos pos) {
+    int regionSize = _api.World.BlockAccessor.RegionSize;
+    Vec2i region = new(pos.X / regionSize, pos.Z / regionSize);
+    if (!_loadedHavens.TryGetValue(region, out List<Haven> havens)) {
+      return null;
+    }
+    Haven best = null;
+    double bestDist = double.PositiveInfinity;
+    foreach (Haven haven in havens) {
+      HavenRegionIntersection intersection = haven.GetIntersection();
+      if (intersection.Contains(pos, ServerConfig.HavenBelowHeight,
+                                ServerConfig.HavenAboveHeight)) {
+        double dist =
+            pos.DistanceSqTo(intersection.Center.X, intersection.Center.Y,
+                             intersection.Center.Z);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = haven;
+        }
+      }
+    }
+    return best;
+  }
+
   private void ProcessUpdates() {
     lock (_pendingIntersectionUpdates) {
-      List<Vec2i> remove = new();
+      List<Vec2i> remove = [];
       foreach ((Vec2i regionCoord, List<HavenRegionIntersectionUpdate> updates)
                    in _pendingIntersectionUpdates) {
         IMapRegion region =
@@ -284,7 +418,7 @@ public class HavenSystem : ModSystem {
           if (!_loadedHavenIntersections.TryGetValue(
                   regionCoord,
                   out List<HavenRegionIntersection> intersections)) {
-            intersections = new();
+            intersections = [];
             _loadedHavenIntersections.Add(regionCoord, intersections);
           }
           ApplyUpdatesForRegion(region, intersections, updates);
@@ -296,6 +430,28 @@ public class HavenSystem : ModSystem {
       }
       foreach (Vec2i v in remove) {
         _pendingIntersectionUpdates.Remove(v);
+      }
+    }
+    lock (_pendingHavenUpdates) {
+      List<Vec2i> remove = [];
+      foreach ((Vec2i regionCoord, List<HavenUpdate> updates)
+                   in _pendingHavenUpdates) {
+        IMapRegion region =
+            _api.World.BlockAccessor.GetMapRegion(regionCoord.X, regionCoord.Y);
+        if (region != null) {
+          if (!_loadedHavens.TryGetValue(regionCoord, out List<Haven> havens)) {
+            havens = [];
+            _loadedHavens.Add(regionCoord, havens);
+          }
+          ApplyUpdatesForRegion(region, havens, updates);
+          remove.Add(regionCoord);
+          if (havens.Count == 0) {
+            _loadedHavens.Remove(regionCoord);
+          }
+        }
+      }
+      foreach (Vec2i v in remove) {
+        _pendingHavenUpdates.Remove(v);
       }
     }
   }
@@ -336,6 +492,40 @@ public class HavenSystem : ModSystem {
     region.SetModdata("haven:intersections", intersections);
   }
 
+  private void ApplyUpdatesForRegion(IMapRegion region, List<Haven> havens,
+                                     List<HavenUpdate> updates) {
+    Dictionary<BlockPos, Haven> updatesDict = new();
+    List<Haven> newHavens = [];
+    foreach (HavenUpdate update in updates) {
+      if (update.OldCenter != null) {
+        updatesDict[update.OldCenter] = update.New;
+      } else {
+        newHavens.Add(update.New);
+      }
+    }
+    if (updatesDict.Count > 0) {
+      for (int i = 0; i < havens.Count;) {
+        if (updatesDict.TryGetValue(havens[i].GetIntersection().Center,
+                                    out Haven update)) {
+          updatesDict.Remove(havens[i].GetIntersection().Center);
+          if (update != null) {
+            havens[i] = update;
+          } else {
+            havens.RemoveAt(i);
+            continue;
+          }
+        }
+        ++i;
+      }
+      if (updatesDict.Count > 0) {
+        Logger.Error("Some haven updates could not be matched " +
+                     "against existing havens and were dropped.");
+      }
+    }
+    havens.AddRange(newHavens);
+    region.SetModdata("haven:havens", havens);
+  }
+
   private void OnSaveGameLoading() {
     if (_api is not ICoreServerAPI sapi) {
       return;
@@ -350,6 +540,15 @@ public class HavenSystem : ModSystem {
         _pendingIntersectionUpdates.AddRange(updates);
       }
     }
+    lock (_pendingHavenUpdates) {
+      var updates = sapi.WorldManager.SaveGame
+                        .GetData<Dictionary<Vec2i, List<HavenUpdate>>>(
+                            "haven:havenupdates");
+      _pendingHavenUpdates.Clear();
+      if (updates != null) {
+        _pendingHavenUpdates.AddRange(updates);
+      }
+    }
   }
 
   private void OnSaveGameSaving() {
@@ -359,6 +558,10 @@ public class HavenSystem : ModSystem {
     lock (_pendingIntersectionUpdates) {
       sapi.WorldManager.SaveGame.StoreData("haven:intersectionupdates",
                                            _pendingIntersectionUpdates);
+    }
+    lock (_pendingHavenUpdates) {
+      sapi.WorldManager.SaveGame.StoreData("haven:havenupdates",
+                                           _pendingHavenUpdates);
     }
   }
 
@@ -388,6 +591,7 @@ public class HavenSystem : ModSystem {
     if (player.WorldData.CurrentGameMode == EnumGameMode.Creative) {
       return input;
     }
+    Haven haven = GetHaven(blockSel.Position);
     // The build and break flags are combined together. This handler does not
     // get any direct indication on whether it is a build or break event.
     // Instead, it is inferred based on whether the left mouse is down (needed
@@ -397,23 +601,60 @@ public class HavenSystem : ModSystem {
     // will be true. However, if that first check succeeds, a second check will
     // be run from Block.CanPlaceBlock, and it will have DidOffset to false. So
     // DidOffset cannot be used to reliably detect block placement events.
-    if (accessType == EnumBlockAccessFlags.BuildOrBreak &&
-        !player.Entity.Controls.LeftMouseDown) {
+    if (!player.Entity.Controls.LeftMouseDown) {
       // This is probably placing a block.
       Block placing = player.Entity.ActiveHandItemSlot.Itemstack?.Block;
-      if (placing != null &&
-          IsBlockPlacementAllowed(intersection, player, blockSel.Position,
-                                  placing)) {
+      if (placing != null) {
+        string error = TestBlockPlacement(intersection, haven, player,
+                                          blockSel.Position, placing);
+        if (error != null) {
+          claimant = error;
+          return EnumWorldAccessResponse.DeniedByMod;
+        }
         return input;
       }
+      claimant = "custommessage-haven";
+      return EnumWorldAccessResponse.DeniedByMod;
+    } else {
+      string error =
+          TestBlockBreak(intersection, haven, player, blockSel.Position);
+      if (error != null) {
+        claimant = error;
+        return EnumWorldAccessResponse.DeniedByMod;
+      }
+      return input;
     }
-    claimant = "custommessage-haven";
-    return EnumWorldAccessResponse.DeniedByMod;
   }
 
-  private bool IsBlockPlacementAllowed(HavenRegionIntersection intersection,
-                                       IPlayer player, BlockPos position,
-                                       Block placing) {
+  private string TestBlockPlacement(HavenRegionIntersection intersection,
+                                    Haven haven, IPlayer player,
+                                    BlockPos position, Block placing) {
+    string defaultError = "custommessage-haven";
+    if (haven != null) {
+      (PlotRing ring, double radians) =
+          haven.GetPlotRing(position, ServerConfig.HavenBelowHeight,
+                            ServerConfig.HavenAboveHeight);
+      if (ring != null) {
+        int owner = ring.GetOwnerIndex(radians);
+        if (owner > 0) {
+          // For owned plots, only allow placement by the owner of the plot.
+          if (ring.OwnerUIDs[owner] == player.PlayerUID) {
+            return null;
+          } else if (ring.OwnerUIDs[owner] != "") {
+            return "custommessage-haven-plot-owned";
+          }
+        } else {
+          defaultError = "custommessage-haven-plot-border";
+        }
+      }
+    } else {
+      // The haven intersection was loaded but not the haven itself. The haven
+      // should be loaded soon. For now, block placements in the plot zone.
+      if (intersection.InPlotZone(position, ServerConfig.HavenBelowHeight,
+                                  ServerConfig.HavenAboveHeight)) {
+        return defaultError;
+      }
+    }
     if (IsCliffBlock(placing)) {
       foreach (BlockFacing facing in BlockFacing.HORIZONTALS) {
         BlockPos test = position.AddCopy(facing);
@@ -424,10 +665,34 @@ public class HavenSystem : ModSystem {
         if (!IsCliffBlock(_api.World.BlockAccessor.GetBlockAbove(test))) {
           continue;
         }
-        return true;
+        return null;
       }
     }
-    return false;
+    return defaultError;
+  }
+
+  private string TestBlockBreak(HavenRegionIntersection intersection,
+                                Haven haven, IPlayer player,
+                                BlockPos position) {
+    string defaultError = "custommessage-haven";
+    if (haven != null) {
+      (PlotRing ring, double radians) =
+          haven.GetPlotRing(position, ServerConfig.HavenBelowHeight,
+                            ServerConfig.HavenAboveHeight);
+      if (ring != null) {
+        int owner = ring.GetOwnerIndex(radians);
+        if (owner > 0) {
+          if (ring.OwnerUIDs[owner] == player.PlayerUID) {
+            return null;
+          } else if (ring.OwnerUIDs[owner] != "") {
+            return "custommessage-haven-plot-owned";
+          }
+        } else {
+          defaultError = "custommessage-haven-plot-border";
+        }
+      }
+    }
+    return defaultError;
   }
 
   private bool IsCliffBlock(Block block) {
