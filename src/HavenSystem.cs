@@ -7,6 +7,7 @@ using Haven.BlockBehaviors;
 using Haven.EntityBehaviors;
 
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.API.Util;
@@ -631,16 +632,15 @@ public class HavenSystem : ModSystem {
                                     BlockPos position, Block placing) {
     string defaultError = "custommessage-haven";
     if (haven != null) {
-      (PlotRing ring, double radians) =
-          haven.GetPlotRing(position, ServerConfig.HavenBelowHeight,
-                            ServerConfig.HavenAboveHeight);
+      (PlotRing ring, int plot) =
+          haven.GetPlot(position, ServerConfig.HavenBelowHeight,
+                        ServerConfig.HavenAboveHeight);
       if (ring != null) {
-        int owner = ring.GetOwnerIndex(radians);
-        if (owner > 0) {
+        if (plot > 0) {
           // For owned plots, only allow placement by the owner of the plot.
-          if (ring.Plots[owner].OwnerUID == player.PlayerUID) {
+          if (ring.Plots[plot].OwnerUID == player.PlayerUID) {
             return null;
-          } else if (ring.Plots[owner].OwnerUID != null) {
+          } else if (ring.Plots[plot].OwnerUID != null) {
             return "custommessage-haven-plot-owned";
           }
         } else {
@@ -676,15 +676,14 @@ public class HavenSystem : ModSystem {
                                 BlockPos position) {
     string defaultError = "custommessage-haven";
     if (haven != null) {
-      (PlotRing ring, double radians) =
-          haven.GetPlotRing(position, ServerConfig.HavenBelowHeight,
-                            ServerConfig.HavenAboveHeight);
+      (PlotRing ring, int plot) =
+          haven.GetPlot(position, ServerConfig.HavenBelowHeight,
+                        ServerConfig.HavenAboveHeight);
       if (ring != null) {
-        int owner = ring.GetOwnerIndex(radians);
-        if (owner > 0) {
-          if (ring.Plots[owner].OwnerUID == player.PlayerUID) {
+        if (plot > 0) {
+          if (ring.Plots[plot].OwnerUID == player.PlayerUID) {
             return null;
-          } else if (ring.Plots[owner].OwnerUID != null) {
+          } else if (ring.Plots[plot].OwnerUID != null) {
             return "custommessage-haven-plot-owned";
           }
         } else {
@@ -700,5 +699,35 @@ public class HavenSystem : ModSystem {
       return false;
     }
     return _cliffBlocks.Contains(block.Id);
+  }
+
+  public string ClaimPlot(BlockPos pos, string langCode, string playerUID,
+                          string playerName) {
+    Haven haven = GetHaven(pos);
+    if (haven == null) {
+      return "There is no haven at that location.";
+    }
+
+    int alreadyOwned = haven.GetOwnedPlots(playerUID);
+    if (alreadyOwned >= ServerConfig.PlotsPerPlayer) {
+      return $"You already own the max plots per player per haven of {ServerConfig.PlotsPerPlayer}";
+    }
+
+    (PlotRing ring, int plot) = haven.GetPlot(
+        pos, ServerConfig.HavenBelowHeight, ServerConfig.HavenAboveHeight);
+    if (ring == null) {
+      return "That location is not in the plot zone.";
+    }
+
+    string error = ring.ClaimPlot(plot, playerUID, playerName);
+    if (error != null) {
+      return Lang.GetL(langCode, error);
+    }
+
+    TerrainHeightReader reader = new(_loader, false);
+
+    UpdateHaven(haven.GetIntersection().Center, haven.GetIntersection().Radius,
+                haven);
+    return null;
   }
 }

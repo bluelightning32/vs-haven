@@ -162,32 +162,12 @@ public class ServerCommands {
     if (pos == null) {
       return TextCommandResult.Error("Cannot read block selection.");
     }
-    Haven haven = _system.GetHaven(pos);
-    if (haven == null) {
-      return TextCommandResult.Error("There is no haven at that location.");
-    }
-
-    int alreadyOwned = haven.GetOwnedPlots(args.Caller.Player.PlayerUID);
-    if (alreadyOwned >= _system.ServerConfig.PlotsPerPlayer) {
-      return TextCommandResult.Error(
-          $"You already own the max plots per player per haven of {_system.ServerConfig.PlotsPerPlayer}");
-    }
-
-    (PlotRing ring, double radians) =
-        haven.GetPlotRing(pos, _system.ServerConfig.HavenBelowHeight,
-                          _system.ServerConfig.HavenAboveHeight);
-    if (ring == null) {
-      return TextCommandResult.Error("That location is not in the plot zone.");
-    }
-
-    string error = ring.ClaimPlot(radians, args.Caller.Player.PlayerUID,
-                                  args.Caller.Player.PlayerName);
+    string error =
+        _system.ClaimPlot(pos, langCode, args.Caller.Player.PlayerUID,
+                          args.Caller.Player.PlayerName);
     if (error != null) {
-      return TextCommandResult.Error(Lang.GetL(langCode, error));
+      return TextCommandResult.Error(error);
     }
-
-    _system.UpdateHaven(haven.GetIntersection().Center,
-                        haven.GetIntersection().Radius, haven);
     return TextCommandResult.Success("Claimed");
   }
 
@@ -217,14 +197,14 @@ public class ServerCommands {
             "You have no claimed plots in the haven.");
       }
     } else {
-      (PlotRing ring, double radians) =
-          haven.GetPlotRing(pos, _system.ServerConfig.HavenBelowHeight,
-                            _system.ServerConfig.HavenAboveHeight);
+      (PlotRing ring, int plot) =
+          haven.GetPlot(pos, _system.ServerConfig.HavenBelowHeight,
+                        _system.ServerConfig.HavenAboveHeight);
       if (ring == null) {
         return TextCommandResult.Error(
             "That location is not in the plot zone.");
       }
-      string error = ring.UnclaimPlot(radians, args.Caller.Player.PlayerUID);
+      string error = ring.UnclaimPlot(plot, args.Caller.Player.PlayerUID);
       if (error != null) {
         return TextCommandResult.Error(Lang.GetL(langCode, error));
       }

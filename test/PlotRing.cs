@@ -51,9 +51,9 @@ public class PlotRing {
     Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
     Assert.IsFalse(ring.ShouldStartNewRing());
 
-    Assert.IsNull(ring.ClaimPlot(Math.Tau / 4, "user2", "user2"));
-    Assert.IsNull(ring.ClaimPlot(2 * Math.Tau / 4, "user3", "user3"));
-    Assert.IsNull(ring.ClaimPlot(3 * Math.Tau / 4, "user3", "user3"));
+    Assert.IsNull(ring.ClaimPlot(1, "user2", "user2"));
+    Assert.IsNull(ring.ClaimPlot(2, "user3", "user3"));
+    Assert.IsNull(ring.ClaimPlot(3, "user3", "user3"));
     Assert.IsTrue(ring.ShouldStartNewRing());
   }
 

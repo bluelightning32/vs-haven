@@ -115,7 +115,7 @@ public class Haven {
   /// <param name="havenBelowHeight"></param>
   /// <param name="havenAboveHeight"></param>
   /// <returns></returns>
-  public (PlotRing, double)
+  private (PlotRing, double)
       GetPlotRing(BlockPos pos, int havenBelowHeight, int havenAboveHeight) {
     if (pos.Y < _center.Y - havenBelowHeight) {
       return (null, 0);
@@ -136,6 +136,25 @@ public class Haven {
       }
     }
     return (null, 0);
+  }
+
+  /// <summary>
+  /// Gets the plot ring at the specified location along with the index of the
+  /// plot in it.
+  /// </summary>
+  /// <param name="pos"></param>
+  /// <param name="havenBelowHeight"></param>
+  /// <param name="havenAboveHeight"></param>
+  /// <returns>the plot (or null if the position is not in a plot) and the plot
+  /// index within it (or -1 if the position is part of the border)</returns>
+  public (PlotRing, int)
+      GetPlot(BlockPos pos, int havenBelowHeight, int havenAboveHeight) {
+    (PlotRing ring, double radians) =
+        GetPlotRing(pos, havenBelowHeight, havenAboveHeight);
+    if (ring == null) {
+      return (null, -1);
+    }
+    return (ring, ring.GetOwnerIndex(radians));
   }
 
   /// <summary>

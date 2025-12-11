@@ -131,17 +131,15 @@ public class PlotRing {
   /// <summary>
   /// Marks the plot as owned if possible
   /// </summary>
-  /// <param name="radians"></param>
-  /// <param name="ownerUID"></param>
-  /// <param name="langCode"></param>
-  /// <returns>null if the ownership request succeeded, or otherwise an error
-  /// message</returns>
-  public string ClaimPlot(double radians, string ownerUID, string ownerName) {
-    int ownerIndex = GetOwnerIndex(radians);
-    if (ownerIndex < 0) {
+  /// <param name="index">the plot index, or -1 if the caller accidentally tried
+  /// to claim a border</param> <param name="ownerUID"></param> <param
+  /// name="langCode"></param> <returns>null if the ownership request succeeded,
+  /// or otherwise an error message</returns>
+  public string ClaimPlot(int index, string ownerUID, string ownerName) {
+    if (index < 0) {
       return "haven:cannot-claim-border";
     }
-    Plot plot = Plots[ownerIndex];
+    Plot plot = Plots[index];
     if (plot.OwnerUID != null) {
       if (plot.OwnerUID == ownerUID) {
         return "haven:plot-already-owned-by-same-owner";
@@ -153,12 +151,11 @@ public class PlotRing {
     return null;
   }
 
-  public string UnclaimPlot(double radians, string playerUID) {
-    int ownerIndex = GetOwnerIndex(radians);
-    if (ownerIndex < 0) {
+  public string UnclaimPlot(int index, string playerUID) {
+    if (index < 0) {
       return "haven:cannot-unclaim-border";
     }
-    Plot plot = Plots[ownerIndex];
+    Plot plot = Plots[index];
     if (plot.OwnerUID != playerUID) {
       return "haven:cannot-unclaim-not-owned";
     }
