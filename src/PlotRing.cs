@@ -5,6 +5,28 @@ using ProtoBuf;
 namespace Haven;
 
 [ProtoContract]
+public class Plot {
+  [ProtoMember(1)]
+  public string OwnerUID = null;
+  [ProtoMember(2)]
+  public string OwnerName = null;
+
+  public override bool Equals(object obj) {
+    if (obj is not Plot other) {
+      return false;
+    }
+    return OwnerUID == other.OwnerUID && OwnerName == other.OwnerName;
+  }
+
+  public override int GetHashCode() {
+    if (OwnerUID == null) {
+      return 0;
+    }
+    return OwnerUID.GetHashCode();
+  }
+}
+
+[ProtoContract]
 public class PlotRing {
   [ProtoMember(1)]
   public readonly int HoleRadius;
@@ -19,7 +41,7 @@ public class PlotRing {
   /// currently unowned.
   /// </summary>
   [ProtoMember(5)]
-  public readonly string[] OwnerUIDs = Array.Empty<string>();
+  public readonly Plot[] Plots = Array.Empty<Plot>();
   [ProtoMember(6)]
   public int UseablePlots;
 
@@ -31,9 +53,9 @@ public class PlotRing {
     PlotRadians = plotRadians;
     int plotCount =
         (int)Math.Ceiling(Math.Tau / (BorderRadians + PlotRadians) - 0.001);
-    OwnerUIDs = new string[plotCount];
-    for (int i = 0; i < OwnerUIDs.Length; ++i) {
-      OwnerUIDs[i] = "";
+    Plots = new Plot[plotCount];
+    for (int i = 0; i < plotCount; ++i) {
+      Plots[i] = new();
     }
     UseablePlots = plotCount * 3 / 4;
     if (UseablePlots <= 0) {
@@ -98,8 +120,8 @@ public class PlotRing {
 
   public bool ShouldStartNewRing() {
     int used = 0;
-    foreach (string owner in OwnerUIDs) {
-      if (owner != "") {
+    foreach (Plot plot in Plots) {
+      if (plot.OwnerUID != null) {
         ++used;
       }
     }
@@ -114,19 +136,20 @@ public class PlotRing {
   /// <param name="langCode"></param>
   /// <returns>null if the ownership request succeeded, or otherwise an error
   /// message</returns>
-  public string ClaimPlot(double radians, string ownerUID) {
+  public string ClaimPlot(double radians, string ownerUID, string ownerName) {
     int ownerIndex = GetOwnerIndex(radians);
     if (ownerIndex < 0) {
       return "haven:cannot-claim-border";
     }
-    string existingOwner = OwnerUIDs[ownerIndex];
-    if (existingOwner != "") {
-      if (existingOwner == ownerUID) {
+    Plot plot = Plots[ownerIndex];
+    if (plot.OwnerUID != null) {
+      if (plot.OwnerUID == ownerUID) {
         return "haven:plot-already-owned-by-same-owner";
       }
       return "haven:plot-already-owned";
     }
-    OwnerUIDs[ownerIndex] = ownerUID;
+    plot.OwnerUID = ownerUID;
+    plot.OwnerName = ownerName;
     return null;
   }
 
@@ -135,11 +158,11 @@ public class PlotRing {
     if (ownerIndex < 0) {
       return "haven:cannot-unclaim-border";
     }
-    string existingOwner = OwnerUIDs[ownerIndex];
-    if (existingOwner != playerUID) {
+    Plot plot = Plots[ownerIndex];
+    if (plot.OwnerUID != playerUID) {
       return "haven:cannot-unclaim-not-owned";
     }
-    OwnerUIDs[ownerIndex] = "";
+    plot.OwnerUID = null;
     return null;
   }
 }

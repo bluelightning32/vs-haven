@@ -46,18 +46,18 @@ public class Haven {
     foreach (PlotRing ring in _plotRings) {
       sb.Append(' ', indentSpaces + 2);
       sb.AppendLine(
-          $"width: {ring.Width}, borderRadians: {ring.BorderRadians}, plotRadians: {ring.PlotRadians}, numPlots: {ring.OwnerUIDs.Length}");
+          $"width: {ring.Width}, borderRadians: {ring.BorderRadians}, plotRadians: {ring.PlotRadians}, numPlots: {ring.Plots.Length}");
     }
     sb.Append(' ', indentSpaces);
     sb.Append("plots:");
     foreach (PlotRing ring in _plotRings) {
-      foreach (string owner in ring.OwnerUIDs) {
+      foreach (Plot plot in ring.Plots) {
         sb.Append('\n');
         sb.Append(' ', indentSpaces + 2);
-        if (owner == "") {
+        if (plot.OwnerUID == null) {
           sb.Append("none");
         } else {
-          sb.Append(owner);
+          sb.Append(plot.OwnerName);
         }
       }
     }
@@ -146,8 +146,8 @@ public class Haven {
   public int GetOwnedPlots(string playerUID) {
     int count = 0;
     foreach (PlotRing ring in _plotRings) {
-      foreach (string owner in ring.OwnerUIDs) {
-        if (owner == playerUID) {
+      foreach (Plot plot in ring.Plots) {
+        if (plot.OwnerUID == playerUID) {
           ++count;
         }
       }
@@ -163,9 +163,9 @@ public class Haven {
   public int UnclaimAllPlots(string playerUID) {
     int unclaimed = 0;
     foreach (PlotRing ring in _plotRings) {
-      for (int i = 0; i < ring.OwnerUIDs.Length; ++i) {
-        if (ring.OwnerUIDs[i] == playerUID) {
-          ring.OwnerUIDs[i] = null;
+      for (int i = 0; i < ring.Plots.Length; ++i) {
+        if (ring.Plots[i].OwnerUID == playerUID) {
+          ring.Plots[i] = null;
           ++unclaimed;
         }
       }

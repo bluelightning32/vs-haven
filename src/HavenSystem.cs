@@ -638,9 +638,9 @@ public class HavenSystem : ModSystem {
         int owner = ring.GetOwnerIndex(radians);
         if (owner > 0) {
           // For owned plots, only allow placement by the owner of the plot.
-          if (ring.OwnerUIDs[owner] == player.PlayerUID) {
+          if (ring.Plots[owner].OwnerUID == player.PlayerUID) {
             return null;
-          } else if (ring.OwnerUIDs[owner] != "") {
+          } else if (ring.Plots[owner].OwnerUID != null) {
             return "custommessage-haven-plot-owned";
           }
         } else {
@@ -682,9 +682,9 @@ public class HavenSystem : ModSystem {
       if (ring != null) {
         int owner = ring.GetOwnerIndex(radians);
         if (owner > 0) {
-          if (ring.OwnerUIDs[owner] == player.PlayerUID) {
+          if (ring.Plots[owner].OwnerUID == player.PlayerUID) {
             return null;
-          } else if (ring.OwnerUIDs[owner] != "") {
+          } else if (ring.Plots[owner].OwnerUID != null) {
             return "custommessage-haven-plot-owned";
           }
         } else {

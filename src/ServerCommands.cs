@@ -180,7 +180,8 @@ public class ServerCommands {
       return TextCommandResult.Error("That location is not in the plot zone.");
     }
 
-    string error = ring.ClaimPlot(radians, args.Caller.Player.PlayerUID);
+    string error = ring.ClaimPlot(radians, args.Caller.Player.PlayerUID,
+                                  args.Caller.Player.PlayerName);
     if (error != null) {
       return TextCommandResult.Error(Lang.GetL(langCode, error));
     }

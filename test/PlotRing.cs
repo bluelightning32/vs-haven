@@ -12,35 +12,35 @@ public class PlotRing {
   [TestMethod]
   public void SerializeUnclaimed() {
     Real.PlotRing ring = new(10, 100, 0, 1);
-    Assert.IsGreaterThan(2, ring.OwnerUIDs.Length);
+    Assert.IsGreaterThan(2, ring.Plots.Length);
 
-    ring.OwnerUIDs[0] = "test";
+    ring.Plots[0].OwnerUID = "test";
 
     byte[] data = SerializerUtil.Serialize(ring);
     Real.PlotRing copy = SerializerUtil.Deserialize<Real.PlotRing>(data);
 
-    CollectionAssert.AreEquivalent(ring.OwnerUIDs, copy.OwnerUIDs);
+    CollectionAssert.AreEquivalent(ring.Plots, copy.Plots);
   }
 
   [TestMethod]
   public void ClaimUnclaimed() {
     Real.PlotRing ring = new(10, 100, 0, 1);
-    Assert.IsNull(ring.ClaimPlot(0, "myuid"));
+    Assert.IsNull(ring.ClaimPlot(0, "myuid", "myname"));
   }
 
   [TestMethod]
   public void NoDoubleClaim() {
     Real.PlotRing ring = new(10, 100, 0, 1);
-    Assert.IsNull(ring.ClaimPlot(0, "user1"));
-    Assert.IsNotNull(ring.ClaimPlot(0, "user2"));
+    Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
+    Assert.IsNotNull(ring.ClaimPlot(0, "user2", "user2"));
   }
 
   [TestMethod]
   public void Reclaim() {
     Real.PlotRing ring = new(10, 100, 0, 1);
-    Assert.IsNull(ring.ClaimPlot(0, "user1"));
+    Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
     Assert.IsNull(ring.UnclaimPlot(0, "user1"));
-    Assert.IsNull(ring.ClaimPlot(0, "user1"));
+    Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
   }
 
   [TestMethod]
@@ -48,12 +48,12 @@ public class PlotRing {
     Real.PlotRing ring = new(10, 100, 0, Math.Tau / 4);
     Assert.IsFalse(ring.ShouldStartNewRing());
 
-    Assert.IsNull(ring.ClaimPlot(0, "user1"));
+    Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
     Assert.IsFalse(ring.ShouldStartNewRing());
 
-    Assert.IsNull(ring.ClaimPlot(Math.Tau / 4, "user2"));
-    Assert.IsNull(ring.ClaimPlot(2 * Math.Tau / 4, "user3"));
-    Assert.IsNull(ring.ClaimPlot(3 * Math.Tau / 4, "user3"));
+    Assert.IsNull(ring.ClaimPlot(Math.Tau / 4, "user2", "user2"));
+    Assert.IsNull(ring.ClaimPlot(2 * Math.Tau / 4, "user3", "user3"));
+    Assert.IsNull(ring.ClaimPlot(3 * Math.Tau / 4, "user3", "user3"));
     Assert.IsTrue(ring.ShouldStartNewRing());
   }
 
@@ -64,7 +64,7 @@ public class PlotRing {
     double ringArea = Math.PI * ((ring.HoleRadius + ring.Width) *
                                      (ring.HoleRadius + ring.Width) -
                                  ring.HoleRadius * ring.HoleRadius);
-    int numPlots = ring.OwnerUIDs.Length;
+    int numPlots = ring.Plots.Length;
     double plotBlocks = ringArea / numPlots;
     Assert.IsGreaterThanOrEqualTo(expectedBlocksPerPlot, plotBlocks);
     Assert.IsLessThan(expectedBlocksPerPlot * 2, plotBlocks);
