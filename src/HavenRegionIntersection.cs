@@ -139,4 +139,15 @@ public class HavenRegionIntersection {
     }
     return !InResourceZone(position, havenBelowHeight, havenAboveHeight);
   }
+
+  public override bool Equals(object obj) {
+    if (obj is not HavenRegionIntersection other) {
+      return false;
+    }
+    return Center == other.Center &&
+           ResourceZoneRadius == other.ResourceZoneRadius &&
+           Radius == other.Radius && SafeZoneRadius == other.SafeZoneRadius;
+  }
+
+  public override int GetHashCode() { return Center.GetHashCode(); }
 }
