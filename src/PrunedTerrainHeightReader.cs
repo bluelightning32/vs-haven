@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace Haven;
@@ -165,5 +166,100 @@ public class PrunedTerrainHeightReader : ITerrainHeightReader {
       return TerrainCategory.Default;
     }
     return category;
+  }
+
+  /// <summary>
+  /// Modify the terrain as described by this reader. Note that reading the
+  /// terrain again after this may return a different result (it may say to
+  /// raise the terrain again).
+  /// </summary>
+  /// <param name="accessor"></param>
+  /// <param name="sourceHeights"></param>
+  /// <param name="pos"></param>
+  /// <param name="offset"></param>
+  public void
+  ApplyColumnChanges(IBlockAccessor accessor, ushort[] sourceHeights,
+                     BlockPos pos, int offset,
+                     Dictionary<BlockPos, TreeAttribute> queuedBlockEntities) {
+    int mapHeight = sourceHeights[offset];
+    pos.Y = mapHeight;
+    Block surface = GetSurfaceBeforeRaise(accessor, pos);
+    // First prune the blocks above the surface.
+    int prunedHeight = pos.Y;
+    for (int y = mapHeight; y > prunedHeight; --y) {
+      pos.Y = y;
+      int existing = accessor.GetBlockId(pos);
+      if (GetCategory(existing).ShouldClear()) {
+        accessor.SetBlock(0, pos);
+      }
+    }
+
+    if (Raise <= 0) {
+      // None of the columns should be raised.
+      return;
+    }
+
+    // Now possibly raise the column.
+    Block raiseBlock = GetRaiseStart(accessor, pos, surface);
+    if (raiseBlock == null) {
+      // Don't raise this column.
+      return;
+    }
+    int raiseStart = pos.Y;
+
+    // Check if there are more blocks above the surface that the terrain reader
+    // missed.
+    pos.Y = mapHeight;
+    surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+    while (surface.Id != 0 &&
+           GetCategory(surface.BlockId) != TerrainCategory.SolidHold) {
+      ++mapHeight;
+      pos.Y = mapHeight;
+      surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
+    }
+
+    BlockPos moveTo = new(pos.X, 0, pos.Z, pos.dimension);
+    for (int y = mapHeight; y > raiseStart; --y) {
+      pos.Y = y;
+      moveTo.Y = y + Raise;
+      CopyBlock(accessor, pos, moveTo, queuedBlockEntities);
+    }
+    if (GetCategory(raiseBlock.Id) == TerrainCategory.RaiseStart) {
+      pos.Y = raiseStart;
+      for (int y = raiseStart + Raise; y > raiseStart; --y) {
+        moveTo.Y = y;
+        CopyBlock(accessor, pos, moveTo, queuedBlockEntities);
+      }
+    } else {
+      for (int y = raiseStart + Raise; y > raiseStart; --y) {
+        moveTo.Y = y;
+        accessor.SetBlock(0, moveTo);
+      }
+    }
+  }
+
+  private void
+  CopyBlock(IBlockAccessor accessor, BlockPos pos, BlockPos moveTo,
+            Dictionary<BlockPos, TreeAttribute> queuedBlockEntities) {
+    CopyBlock(accessor, pos, moveTo, BlockLayersAccess.Solid);
+    CopyBlock(accessor, pos, moveTo, BlockLayersAccess.Fluid);
+    BlockEntity be = accessor.GetBlockEntity(pos);
+    if (be != null) {
+      TreeAttribute tree = new();
+      be.ToTreeAttributes(tree);
+      queuedBlockEntities.Add(moveTo.Copy(), tree);
+    }
+    Dictionary<int, Block> decors = accessor.GetSubDecors(pos);
+    if (decors != null) {
+      foreach ((int face, Block decor) in decors) {
+        accessor.SetDecor(decor, pos, face);
+      }
+    }
+  }
+
+  private void CopyBlock(IBlockAccessor accessor, BlockPos pos, BlockPos moveTo,
+                         int layer) {
+    Block source = accessor.GetBlock(pos, layer);
+    accessor.SetBlock(source.Id, moveTo, layer);
   }
 }

@@ -73,89 +73,6 @@ public class DiskPruner : IWorldGenerator {
     }
   }
 
-  private void ProcessColumn(IBlockAccessor accessor, ushort[] sourceHeights,
-                             BlockPos pos, int offset) {
-    int mapHeight = sourceHeights[offset];
-    pos.Y = mapHeight;
-    Block surface = _pruneConfig.GetSurfaceBeforeRaise(accessor, pos);
-    // First prune the blocks above the surface.
-    int prunedHeight = pos.Y;
-    for (int y = mapHeight; y > prunedHeight; --y) {
-      pos.Y = y;
-      int existing = accessor.GetBlockId(pos);
-      if (GetCategory(existing).ShouldClear()) {
-        accessor.SetBlock(0, pos);
-      }
-    }
-
-    if (_pruneConfig.Raise <= 0) {
-      // None of the columns should be raised.
-      return;
-    }
-
-    // Now possibly raise the column.
-    Block raiseBlock = _pruneConfig.GetRaiseStart(accessor, pos, surface);
-    if (raiseBlock == null) {
-      // Don't raise this column.
-      return;
-    }
-    int raiseStart = pos.Y;
-
-    // Check if there are more blocks above the surface that the terrain reader
-    // missed.
-    pos.Y = mapHeight;
-    surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
-    while (surface.Id != 0 && _pruneConfig.GetCategory(surface.BlockId) !=
-                                  TerrainCategory.SolidHold) {
-      ++mapHeight;
-      pos.Y = mapHeight;
-      surface = accessor.GetBlock(pos, BlockLayersAccess.Solid);
-    }
-
-    BlockPos moveTo = new(pos.X, 0, pos.Z, pos.dimension);
-    for (int y = mapHeight; y > raiseStart; --y) {
-      pos.Y = y;
-      moveTo.Y = y + _pruneConfig.Raise;
-      CopyBlock(accessor, pos, moveTo);
-    }
-    if (_pruneConfig.GetCategory(raiseBlock.Id) == TerrainCategory.RaiseStart) {
-      pos.Y = raiseStart;
-      for (int y = raiseStart + _pruneConfig.Raise; y > raiseStart; --y) {
-        moveTo.Y = y;
-        CopyBlock(accessor, pos, moveTo);
-      }
-    } else {
-      for (int y = raiseStart + _pruneConfig.Raise; y > raiseStart; --y) {
-        moveTo.Y = y;
-        accessor.SetBlock(0, moveTo);
-      }
-    }
-  }
-
-  private void CopyBlock(IBlockAccessor accessor, BlockPos pos,
-                         BlockPos moveTo) {
-    CopyBlock(accessor, pos, moveTo, BlockLayersAccess.Solid);
-    CopyBlock(accessor, pos, moveTo, BlockLayersAccess.Fluid);
-    BlockEntity be = accessor.GetBlockEntity(pos);
-    if (be != null) {
-      TreeAttribute tree = new();
-      be.ToTreeAttributes(tree);
-      _queuedBlockEntities.Add(moveTo.Copy(), tree);
-    }
-    Dictionary<int, Block> decors = accessor.GetSubDecors(pos);
-    if (decors != null) {
-      foreach ((int face, Block decor) in decors) {
-        accessor.SetDecor(decor, pos, face);
-      }
-    }
-  }
-
-  private void CopyBlock(IBlockAccessor accessor, BlockPos pos, BlockPos moveTo,
-                         int layer) {
-    Block source = accessor.GetBlock(pos, layer);
-    accessor.SetBlock(source.Id, moveTo, layer);
-  }
-
   public bool Generate(IBlockAccessor accessor) {
     if (_finishedRadius == _activeRadius) {
       return true;
@@ -183,7 +100,8 @@ public class DiskPruner : IWorldGenerator {
         for (int x = 0; x < GlobalConstants.ChunkSize; ++x, ++offset) {
           pos.X = chunkXOffset + x;
           pos.Z = chunkZOffset + z;
-          ProcessColumn(accessor, sourceHeights, pos, offset);
+          _pruneConfig.ApplyColumnChanges(accessor, sourceHeights, pos, offset,
+                                          _queuedBlockEntities);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
@@ -219,7 +137,8 @@ public class DiskPruner : IWorldGenerator {
           }
           pos.X = chunkXOffset + x;
           pos.Z = chunkZOffset + z;
-          ProcessColumn(accessor, sourceHeights, pos, offset);
+          _pruneConfig.ApplyColumnChanges(accessor, sourceHeights, pos, offset,
+                                          _queuedBlockEntities);
         }
       }
       _finishedChunks.Add((chunkX, chunkZ));
