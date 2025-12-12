@@ -4,5 +4,17 @@
       // Clear the flowers in order to make the resource zone more recognizable on the map
       "*:flower-*" : 1
     }
+  },
+  plotZoneClear: {
+    exclude: {
+      // Don't clear flowers in the plot zone.
+      "*:flower-*" : 2
+    }
+  },
+  plotZoneReplace: {
+    include: {
+      // Allow the chest to replace a flower.
+      "*:flower-*" : 2
+    }
   }
 }

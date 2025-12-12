@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 
 using ProtoBuf;
 
+using Vintagestory.API.Common;
 using Vintagestory.API.Config;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace Haven;
@@ -13,12 +16,14 @@ public class Plot {
   public string OwnerUID = null;
   [ProtoMember(2)]
   public string OwnerName = null;
+  [ProtoMember(3)]
+  public string FormerOwnerUID = null;
 
   public override bool Equals(object obj) {
     if (obj is not Plot other) {
       return false;
     }
-    return OwnerUID == other.OwnerUID && OwnerName == other.OwnerName;
+    return OwnerUID == other.OwnerUID && OwnerName == other.OwnerName && FormerOwnerUID == other.FormerOwnerUID;
   }
 
   public override int GetHashCode() {
@@ -163,6 +168,7 @@ public class PlotRing {
       return "haven:cannot-unclaim-not-owned";
     }
     plot.OwnerUID = null;
+    plot.FormerOwnerUID = playerUID;
     return null;
   }
 
@@ -260,5 +266,40 @@ public class PlotRing {
     }
     double radians = Math.Atan2(dz, dx);
     return GetOwnerIndex(radians) == plot;
+  }
+
+  public void RaisePlot(IWorldAccessor world, IChunkLoader loader,
+                        PrunedTerrainHeightReader terrain, int centerX,
+                        int centerZ, int dimension, int plot) {
+    Dictionary<BlockPos, TreeAttribute> queuedBlockEntities = [];
+    void ProcessChunk(int chunkX, int chunkZ, Rectanglei boundingBox) {
+      int startX = chunkX * GlobalConstants.ChunkSize;
+      int startZ = chunkZ * GlobalConstants.ChunkSize;
+      int endX = startX + GlobalConstants.ChunkSize;
+      int endZ = startZ + GlobalConstants.ChunkSize;
+      int offset = 0;
+      ushort[] sourceHeights =
+          terrain.Source.GetHeights(world.BlockAccessor, chunkX, chunkZ);
+      BlockPos pos = new(dimension);
+      for (pos.Z = startZ; pos.Z < endZ; ++pos.Z) {
+        for (pos.X = startX; pos.X < endX; ++pos.X, ++offset) {
+          if (!boundingBox.PointInside(pos.X, pos.Z)) {
+            continue;
+          }
+          if (!IsInPlot(centerX, centerZ, plot, pos.X, pos.Z)) {
+            continue;
+          }
+          terrain.ApplyColumnChanges(world.BlockAccessor, sourceHeights, pos,
+                                     offset, queuedBlockEntities);
+          foreach ((BlockPos bePos, TreeAttribute tree)
+                       in queuedBlockEntities) {
+            PrunedTerrainHeightReader.CommitBlockEntity(
+                world, loader, world.BlockAccessor, bePos, tree);
+          }
+          queuedBlockEntities.Clear();
+        }
+      }
+    }
+    TraversePlotMapChunks(centerX, centerZ, plot, ProcessChunk);
   }
 }

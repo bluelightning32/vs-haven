@@ -38,7 +38,7 @@ public class PrunedTerrainHeightReader {
     BlockConfig config = new();
     Real.PrunedTerrainHeightReader reader =
         new(new Real.TerrainHeightReader(loader, true),
-            config.ResolveTerrainCategories(s_resolver), 100);
+            config.ResolveResourceZoneCategories(s_resolver), 100);
     int y = ((ITerrainHeightReader)reader)
                 .GetHeight(s_server.World.BlockAccessor, new(0, 0));
     s_server.World.BlockAccessor.SetBlock(
@@ -85,7 +85,7 @@ public class PrunedTerrainHeightReader {
     config.TerrainReplace.Include = new() { { "game:rock-granite", 1 } };
     Real.PrunedTerrainHeightReader reader =
         new(new Real.TerrainHeightReader(loader, false),
-            config.ResolveTerrainCategories(s_resolver), 100);
+            config.ResolveResourceZoneCategories(s_resolver), 100);
     // Should skip all the granite except at y=0.
     Assert.AreEqual(0, ((ITerrainHeightReader)reader)
                            .GetHeight(s_server.World.BlockAccessor, new(0, 0)));
@@ -121,7 +121,7 @@ public class PrunedTerrainHeightReader {
     config.TerrainAvoid.Include = new() { { "game:rock-andesite", 1 } };
     Real.PrunedTerrainHeightReader reader =
         new(new Real.TerrainHeightReader(loader, false),
-            config.ResolveTerrainCategories(s_resolver), 100);
+            config.ResolveResourceZoneCategories(s_resolver), 100);
     Assert.AreEqual(2, ((ITerrainHeightReader)reader)
                            .GetHeight(s_server.World.BlockAccessor, new(0, 0)));
     // The andesite was marked as non-solid.

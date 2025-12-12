@@ -23,6 +23,8 @@ public class ResourceZoneConfig {
   private ICollection<Structure> _structures = null;
   public Dictionary<int, TerrainCategory> TerrainCategories { get;
                                                               private set; }
+  public Dictionary<int, TerrainCategory> PlotTerrainCategories { get;
+                                                                  private set; }
 
   public ResourceZoneConfig() {}
 
@@ -42,7 +44,8 @@ public class ResourceZoneConfig {
       }
     }
     logger.Event($"Loaded {_structures.Count} haven structures.");
-    TerrainCategories = config.ResolveTerrainCategories(resolver);
+    TerrainCategories = config.ResolveResourceZoneCategories(resolver);
+    PlotTerrainCategories = config.ResolvePlotZoneCategories(resolver);
   }
 
   public IEnumerable<OffsetBlockSchematic> SelectStructures(IRandom rand) {

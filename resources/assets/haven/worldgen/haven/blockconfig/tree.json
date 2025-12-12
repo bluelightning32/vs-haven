@@ -10,5 +10,34 @@
       // Clear the vines so that they are not left hanging after the trees are removed.
       "game:wildvine-*" : 1
     }
+  },
+  plotZoneClear: {
+    // Do not clear trees in plots
+    exclude: {
+      "*:leavesbranchy-*" : 2,
+      "*:leavesbranchystatic-*" : 2,
+      "*:bambooleaves-*" : 2,
+      "*:leaves-*" : 2,
+      "*:log-*" : 2,
+      "haven:branches-*": 2,
+      "game:wildvine-*" : 2
+    }
+  },
+  plotZoneReplace: {
+    // Allow leaves to be moved up in plots and be replaced with the chest.
+    include: {
+      "*:leavesbranchy-*" : 2,
+      "*:leavesbranchystatic-*" : 2,
+      "*:bambooleaves-*" : 2,
+      "*:leaves-*" : 2,
+      "haven:branches-*": 2,
+      "game:wildvine-*" : 2
+    }
+  },
+  plotZoneAvoid: {
+    // Avoid placing the chest on top of logs
+    include: {
+      "*:log-*" : 1,
+    }
   }
 }

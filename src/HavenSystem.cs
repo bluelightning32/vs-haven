@@ -40,6 +40,7 @@ public class HavenSystem : ModSystem {
   private HavenGenerator _activeRevertableGenerator = null;
   private ChunkLoader _loader = null;
   private PrunedTerrainHeightReader _terrain = null;
+  private PrunedTerrainHeightReader _plotTerrain = null;
   private ServerCommands _commands = null;
   private readonly Dictionary<Vec2i, List<HavenRegionIntersection>>
       _loadedHavenIntersections = [];
@@ -81,6 +82,10 @@ public class HavenSystem : ModSystem {
     _terrain = new PrunedTerrainHeightReader(
         new TerrainHeightReader(_loader, false),
         ServerConfig.ResourceZone.TerrainCategories,
+        ServerConfig.ResourceZone.TerrainRaise);
+    _plotTerrain = new PrunedTerrainHeightReader(
+        new TerrainHeightReader(_loader, false),
+        ServerConfig.ResourceZone.PlotTerrainCategories,
         ServerConfig.ResourceZone.TerrainRaise);
 
     // This is normally set by GenStructures.initWorldGen, but that isn't called
@@ -250,7 +255,7 @@ public class HavenSystem : ModSystem {
     Dictionary<Vec2i, List<HavenRegionIntersection>> result = [];
     foreach ((Vec2i pos, List<HavenRegionIntersection> intersections)
                  in _loadedHavenIntersections) {
-      result.Add(pos, [..intersections.Select(i => i.Copy())]);
+      result.Add(pos, [.. intersections.Select(i => i.Copy())]);
     }
     return result;
   }
@@ -685,6 +690,9 @@ public class HavenSystem : ModSystem {
             return null;
           } else if (ring.Plots[plot].OwnerUID != null) {
             return "custommessage-haven-plot-owned";
+          } else if (ring.Plots[plot].FormerOwnerUID != null) {
+            // Allow anyone to break (but not place) blocks in formerly owned plots.
+            return null;
           }
         } else {
           defaultError = "custommessage-haven-plot-border";
@@ -723,8 +731,11 @@ public class HavenSystem : ModSystem {
     if (error != null) {
       return Lang.GetL(langCode, error);
     }
-
-    TerrainHeightReader reader = new(_loader, false);
+    if (ring.Plots[plot].FormerOwnerUID == null) {
+      BlockPos center = haven.GetIntersection().Center;
+      ring.RaisePlot(_api.World, _loader, _plotTerrain, center.X, center.Z,
+                     center.dimension, plot);
+    }
 
     UpdateHaven(haven.GetIntersection().Center, haven.GetIntersection().Radius,
                 haven);

@@ -163,7 +163,8 @@ public class DiskPruner : IWorldGenerator {
   public bool Commit(IBlockAccessor accessor) {
     List<BlockPos> finished = [];
     foreach ((BlockPos pos, TreeAttribute tree) in _queuedBlockEntities) {
-      if (CommitBlockEntity(accessor, pos, tree)) {
+      if (PrunedTerrainHeightReader.CommitBlockEntity(_worldForResolve, _loader,
+                                                      accessor, pos, tree)) {
         finished.Add(pos);
       }
     }
@@ -171,59 +172,6 @@ public class DiskPruner : IWorldGenerator {
       _queuedBlockEntities.Remove(pos);
     }
     return _queuedBlockEntities.Count == 0;
-  }
-
-  private bool CommitBlockEntity(IBlockAccessor accessor, BlockPos pos,
-                                 TreeAttribute tree) {
-    string treeBlockCode = tree.GetString("blockCode");
-    if (treeBlockCode == null) {
-      return true;
-    }
-    Block block = accessor.GetBlock(pos);
-    if (block.Code != treeBlockCode) {
-      if (block.Id == 0) {
-        if (accessor.GetChunkAtBlockPos(pos) == null) {
-          _loader.LoadChunkColumnByBlockXZ(pos.X, pos.Z);
-          // Try again when the chunk is loaded.
-          return false;
-        }
-      }
-      // Some other block was placed at the target location in the meantime. So
-      // give up on updating the block entity for the old block.
-      HavenSystem.Logger.Warning(
-          "A block of {0} was placed at {1} before the block entity for " +
-              "block {2} could be restored.",
-          block.Code, pos, treeBlockCode);
-      return true;
-    }
-    if (block.EntityClass == null) {
-      // Something went wrong. This block was not supposed to have a block
-      // entity.
-      HavenSystem.Logger.Error(
-          "Tried to restore a block entity for block {0}, but that block " +
-              "does not have a block entity.",
-          block.Code);
-      return true;
-    }
-    BlockEntity be = accessor.GetBlockEntity(pos);
-    if (be == null) {
-      accessor.SpawnBlockEntity(block.EntityClass, pos);
-      be = accessor.GetBlockEntity(pos);
-      if (be == null) {
-        // Failed to spawn the block entity. Give up.
-        HavenSystem.Logger.Error("Failed to spawn a block entity of type {0}",
-                                 block.EntityClass);
-        return true;
-      }
-    }
-    tree.SetInt("posx", pos.X);
-    tree.SetInt("posy", pos.InternalY);
-    tree.SetInt("posz", pos.Z);
-    be.FromTreeAttributes(tree, _worldForResolve);
-    if (accessor is not IWorldGenBlockAccessor) {
-      be.MarkDirty();
-    }
-    return true;
   }
 
   /// <summary>
