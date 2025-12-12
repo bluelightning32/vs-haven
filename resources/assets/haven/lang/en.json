@@ -15,11 +15,13 @@
   "game:ingameerror-noprivilege-buildbreak-haven": "This ground is protected by a haven.",
   "game:ingameerror-noprivilege-buildbreak-haven-plot-owned": "This plot is owned by someone else.",
   "game:ingameerror-noprivilege-buildbreak-haven-plot-border": "This plot border is part of the right-of-way.",
+  "game:ingameerror-noprivilege-buildbreak-haven-cannot-break-plot-chest": "The plot chest is protected by the haven.",
 
   // Error messages from the "/haven claim" and "haven /unclaim" commands
   "haven:cannot-claim-border": "This block is part of the border between plots and cannot be claimed.",
   "haven:plot-already-owned-by-same-owner": "You already own this plot.",
   "haven:plot-already-owned": "This plot already has an owner.",
   "haven:cannot-unclaim-border": "This block is part of the border between plots, which you already do not own.",
+  "haven:already-unclaimed": "This plot is already unclaimed.",
   "haven:cannot-unclaim-not-owned": "This plot is owned by someone else and cannot be unclaimed by you."
 }

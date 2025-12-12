@@ -4,6 +4,7 @@ using System.Text;
 
 using ProtoBuf;
 
+using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
 namespace Haven;
@@ -177,14 +178,15 @@ public class Haven {
   /// <summary>
   /// Unclaim all plots in this haven owned by the given player
   /// </summary>
+  /// <param name="accessor"></param>
   /// <param name="playerUID"></param>
   /// <returns></returns>
-  public int UnclaimAllPlots(string playerUID) {
+  public int UnclaimAllPlots(IBlockAccessor accessor, string playerUID) {
     int unclaimed = 0;
     foreach (PlotRing ring in _plotRings) {
       for (int i = 0; i < ring.Plots.Length; ++i) {
         if (ring.Plots[i].OwnerUID == playerUID) {
-          ring.Plots[i] = null;
+          ring.UnclaimPlot(accessor, i, playerUID);
           ++unclaimed;
         }
       }

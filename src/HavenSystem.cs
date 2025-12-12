@@ -591,43 +591,52 @@ public class HavenSystem : ModSystem {
     if (intersection == null) {
       return input;
     }
-    if (accessType != EnumBlockAccessFlags.BuildOrBreak) {
-      return input;
-    }
-    if (player.WorldData.CurrentGameMode == EnumGameMode.Creative) {
-      return input;
-    }
     Haven haven = GetHaven(blockSel.Position);
-    // The build and break flags are combined together. This handler does not
-    // get any direct indication on whether it is a build or break event.
-    // Instead, it is inferred based on whether the left mouse is down (needed
-    // to break blocks).
-    //
-    // The first time this is called for a place block event, blockSel.DidOffset
-    // will be true. However, if that first check succeeds, a second check will
-    // be run from Block.CanPlaceBlock, and it will have DidOffset to false. So
-    // DidOffset cannot be used to reliably detect block placement events.
-    if (!player.Entity.Controls.LeftMouseDown) {
-      // This is probably placing a block.
-      Block placing = player.Entity.ActiveHandItemSlot.Itemstack?.Block;
-      if (placing != null) {
-        string error = TestBlockPlacement(intersection, haven, player,
-                                          blockSel.Position, placing);
+    if (accessType == EnumBlockAccessFlags.BuildOrBreak) {
+      if (player.WorldData.CurrentGameMode == EnumGameMode.Creative) {
+        return input;
+      }
+      // The build and break flags are combined together. This handler does not
+      // get any direct indication on whether it is a build or break event.
+      // Instead, it is inferred based on whether the left mouse is down (needed
+      // to break blocks).
+      //
+      // The first time this is called for a place block event, blockSel.DidOffset
+      // will be true. However, if that first check succeeds, a second check will
+      // be run from Block.CanPlaceBlock, and it will have DidOffset to false. So
+      // DidOffset cannot be used to reliably detect block placement events.
+      if (!player.Entity.Controls.LeftMouseDown) {
+        // This is probably placing a block.
+        Block placing = player.Entity.ActiveHandItemSlot.Itemstack?.Block;
+        if (placing != null) {
+          string error = TestBlockPlacement(intersection, haven, player,
+                                            blockSel.Position, placing);
+          if (error != null) {
+            claimant = error;
+            return EnumWorldAccessResponse.DeniedByMod;
+          }
+          return input;
+        }
+        claimant = "custommessage-haven";
+        return EnumWorldAccessResponse.DeniedByMod;
+      } else {
+        string error =
+            TestBlockBreak(intersection, haven, player, blockSel.Position);
         if (error != null) {
           claimant = error;
           return EnumWorldAccessResponse.DeniedByMod;
         }
         return input;
       }
-      claimant = "custommessage-haven";
-      return EnumWorldAccessResponse.DeniedByMod;
-    } else {
+    } else if (accessType == EnumBlockAccessFlags.Use) {
       string error =
-          TestBlockBreak(intersection, haven, player, blockSel.Position);
+          TestUseBlock(intersection, haven, player, blockSel.Position);
       if (error != null) {
         claimant = error;
         return EnumWorldAccessResponse.DeniedByMod;
       }
+      return input;
+    } else {
       return input;
     }
   }
@@ -681,16 +690,20 @@ public class HavenSystem : ModSystem {
                                 BlockPos position) {
     string defaultError = "custommessage-haven";
     if (haven != null) {
-      (PlotRing ring, int plot) =
+      (PlotRing ring, int plotIndex) =
           haven.GetPlot(position, ServerConfig.HavenBelowHeight,
                         ServerConfig.HavenAboveHeight);
       if (ring != null) {
-        if (plot >= 0) {
-          if (ring.Plots[plot].OwnerUID == player.PlayerUID) {
+        if (plotIndex >= 0) {
+          Plot plot = ring.Plots[plotIndex];
+          if (plot.OwnerUID == player.PlayerUID) {
+            if (plot.ChestPos == position) {
+              return "custommessage-haven-cannot-break-plot-chest";
+            }
             return null;
-          } else if (ring.Plots[plot].OwnerUID != null) {
+          } else if (plot.OwnerUID != null) {
             return "custommessage-haven-plot-owned";
-          } else if (ring.Plots[plot].FormerOwnerUID != null) {
+          } else if (plot.FormerOwnerUID != null) {
             // Allow anyone to break (but not place) blocks in formerly owned plots.
             return null;
           }
@@ -700,6 +713,28 @@ public class HavenSystem : ModSystem {
       }
     }
     return defaultError;
+  }
+
+  private string TestUseBlock(HavenRegionIntersection intersection,
+                                Haven haven, IPlayer player,
+                                BlockPos position) {
+    if (haven == null) {
+      return "custommessage-haven";
+    }
+    (PlotRing ring, int plotIndex) =
+        haven.GetPlot(position, ServerConfig.HavenBelowHeight,
+                      ServerConfig.HavenAboveHeight);
+    if (ring != null) {
+      if (plotIndex >= 0) {
+        Plot plot = ring.Plots[plotIndex];
+        if (plot.OwnerUID == player.PlayerUID) {
+          return null;
+        } else if (plot.OwnerUID != null) {
+          return "custommessage-haven-plot-owned";
+        }
+      }
+    }
+    return null;
   }
 
   private bool IsCliffBlock(Block block) {
@@ -731,14 +766,85 @@ public class HavenSystem : ModSystem {
     if (error != null) {
       return Lang.GetL(langCode, error);
     }
+    BlockPos center = haven.GetIntersection().Center;
     if (ring.Plots[plot].FormerOwnerUID == null) {
-      BlockPos center = haven.GetIntersection().Center;
+      _plotTerrain.Raise = ServerConfig.ResourceZone.TerrainRaise;
       ring.RaisePlot(_api.World, _loader, _plotTerrain, center.X, center.Z,
                      center.dimension, plot);
     }
+    _plotTerrain.Raise = 0;
+    ring.CreateChest(_plotTerrain, _api.World, center, plot);
 
     UpdateHaven(haven.GetIntersection().Center, haven.GetIntersection().Radius,
                 haven);
     return null;
+  }
+
+  public bool UnclaimPlot(BlockPos pos, string langCode, string playerUID,
+                          bool all, out string message) {
+
+    Haven haven = GetHaven(pos);
+    if (haven == null) {
+      message = "There is no haven at that location.";
+      return false;
+    }
+
+    if (all) {
+      int unclaimed = haven.UnclaimAllPlots(_api.World.BlockAccessor, playerUID);
+      if (unclaimed > 0) {
+        UpdateHaven(haven.GetIntersection().Center,
+                            haven.GetIntersection().Radius, haven);
+        message = $"Claimed {unclaimed} plot(s).";
+        return true;
+      } else {
+        message = "You have no claimed plots in the haven.";
+        return false;
+      }
+    } else {
+      (PlotRing ring, int plot) =
+          haven.GetPlot(pos, ServerConfig.HavenBelowHeight,
+                        ServerConfig.HavenAboveHeight);
+      if (ring == null) {
+        message =
+            "That location is not in the plot zone.";
+        return false;
+      }
+      string error = ring.UnclaimPlot(_api.World.BlockAccessor, plot, playerUID);
+      if (error != null) {
+        message = Lang.GetL(langCode, error);
+        return false;
+      }
+      UpdateHaven(haven.GetIntersection().Center,
+                          haven.GetIntersection().Radius, haven);
+      message = "Unclaimed";
+      return true;
+    }
+  }
+
+  public bool AdminUnclaimPlot(BlockPos pos, string langCode, out string message) {
+
+    Haven haven = GetHaven(pos);
+    if (haven == null) {
+      message = "There is no haven at that location.";
+      return false;
+    }
+
+    (PlotRing ring, int plot) =
+        haven.GetPlot(pos, ServerConfig.HavenBelowHeight,
+                      ServerConfig.HavenAboveHeight);
+    if (ring == null) {
+      message =
+          "That location is not in the plot zone.";
+      return false;
+    }
+    string error = ring.AdminUnclaimPlot(_api.World.BlockAccessor, plot);
+    if (error != null) {
+      message = Lang.GetL(langCode, error);
+      return false;
+    }
+    UpdateHaven(haven.GetIntersection().Center,
+                        haven.GetIntersection().Radius, haven);
+    message = "Unclaimed";
+    return true;
   }
 }

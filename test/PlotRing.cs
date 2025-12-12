@@ -40,7 +40,7 @@ public class PlotRing {
   public void Reclaim() {
     Real.PlotRing ring = new(10, 100, 0, 1);
     Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
-    Assert.IsNull(ring.UnclaimPlot(0, "user1"));
+    Assert.IsNull(ring.UnclaimPlot(Framework.Api.World.BlockAccessor, 0, "user1"));
     Assert.IsNull(ring.ClaimPlot(0, "user1", "user1"));
   }
 

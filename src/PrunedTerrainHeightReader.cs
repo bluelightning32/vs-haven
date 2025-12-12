@@ -71,7 +71,7 @@ public static class TerrainCategoryExtensions {
 public class PrunedTerrainHeightReader : ITerrainHeightReader {
   public readonly ITerrainHeightReader Source;
   private readonly Dictionary<int, TerrainCategory> _terrainCategories;
-  public readonly ushort Raise;
+  public ushort Raise;
 
   public PrunedTerrainHeightReader(
       ITerrainHeightReader source,

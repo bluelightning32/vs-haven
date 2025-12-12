@@ -62,6 +62,17 @@ public class ServerCommands {
                   "the haven if all is passed.")
         .HandleWith(UnclaimPlot)
         .WithArgs(parsers.OptionalWord("all"))
+        .EndSub()
+        .BeginSub("adminunclaim")
+        .WithDesc("Unclaim the plot at the block selection, even if you are not the owner.")
+        .RequiresPrivilege("worldedit")
+        .HandleWith(AdminUnclaimPlot)
+        .EndSub()
+        .BeginSub("adminclaim")
+        .WithDesc("Claim the plot at the block selection on behalf of someone else.")
+        .RequiresPrivilege("worldedit")
+        .WithArgs(parsers.Word("username"), parsers.Word("uid"))
+        .HandleWith(AdminClaimPlot)
         .EndSub();
   }
 
@@ -179,38 +190,41 @@ public class ServerCommands {
       return TextCommandResult.Error("Cannot read block selection.");
     }
 
-    Haven haven = _system.GetHaven(pos);
-    if (haven == null) {
-      return TextCommandResult.Error("There is no haven at that location.");
-    }
-
     bool all = (args.Parsers[0].IsMissing ? "" : args[0] as string) == "all";
 
-    if (all) {
-      int unclaimed = haven.UnclaimAllPlots(args.Caller.Player.PlayerUID);
-      if (unclaimed > 0) {
-        _system.UpdateHaven(haven.GetIntersection().Center,
-                            haven.GetIntersection().Radius, haven);
-        return TextCommandResult.Success($"Claimed {unclaimed} plot(s).");
-      } else {
-        return TextCommandResult.Error(
-            "You have no claimed plots in the haven.");
-      }
-    } else {
-      (PlotRing ring, int plot) =
-          haven.GetPlot(pos, _system.ServerConfig.HavenBelowHeight,
-                        _system.ServerConfig.HavenAboveHeight);
-      if (ring == null) {
-        return TextCommandResult.Error(
-            "That location is not in the plot zone.");
-      }
-      string error = ring.UnclaimPlot(plot, args.Caller.Player.PlayerUID);
-      if (error != null) {
-        return TextCommandResult.Error(Lang.GetL(langCode, error));
-      }
-      _system.UpdateHaven(haven.GetIntersection().Center,
-                          haven.GetIntersection().Radius, haven);
-      return TextCommandResult.Success("Unclaimed");
+    if (!_system.UnclaimPlot(pos, langCode, args.Caller.Player.PlayerUID, all, out string message)) {
+      return TextCommandResult.Error(message);
     }
+    return TextCommandResult.Success(message);
+  }
+
+  private TextCommandResult AdminUnclaimPlot(TextCommandCallingArgs args) {
+    BlockPos pos = args.Caller.Player?.CurrentBlockSelection.Position;
+    string langCode = (args.Caller.Player as IServerPlayer)?.LanguageCode ?? "";
+
+    if (pos == null) {
+      return TextCommandResult.Error("Cannot read block selection.");
+    }
+
+    if (!_system.AdminUnclaimPlot(pos, langCode, out string message)) {
+      return TextCommandResult.Error(message);
+    }
+    return TextCommandResult.Success(message);
+  }
+
+  private TextCommandResult AdminClaimPlot(TextCommandCallingArgs args) {
+    BlockPos pos = args.Caller.Player?.CurrentBlockSelection.Position;
+    string langCode = (args.Caller.Player as IServerPlayer)?.LanguageCode ?? "";
+
+    if (pos == null) {
+      return TextCommandResult.Error("Cannot read block selection.");
+    }
+    string error =
+        _system.ClaimPlot(pos, langCode, args[1] as string,
+                          args[0] as string);
+    if (error != null) {
+      return TextCommandResult.Error(error);
+    }
+    return TextCommandResult.Success("Claimed");
   }
 }
