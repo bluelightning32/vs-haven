@@ -2,6 +2,9 @@ using System;
 
 using ProtoBuf;
 
+using Vintagestory.API.Config;
+using Vintagestory.API.MathTools;
+
 namespace Haven;
 
 [ProtoContract]
@@ -161,5 +164,86 @@ public class PlotRing {
     }
     plot.OwnerUID = null;
     return null;
+  }
+
+  /// <summary>
+  /// Get a bounding box around the X,Z coordinates of blocks within the plot.
+  /// All of the plot's blocks are included in the bounding box, but the
+  /// bounding box is not the tightest possible bounding box.
+  /// </summary>
+  /// <param name="centerX"></param>
+  /// <param name="centerZ"></param>
+  /// <param name="plot"></param>
+  /// <returns></returns>
+  public Rectanglei GetPlotBoundingBox(int centerX, int centerZ, int plot) {
+    double startRadians = plot * (PlotRadians + BorderRadians);
+    double endRadians = startRadians + PlotRadians;
+
+    int x1 = (int)(HoleRadius * Math.Cos(startRadians));
+    int z1 = (int)(HoleRadius * Math.Sin(startRadians));
+    int x2 = x1;
+    int z2 = z1;
+
+    // Experimentally, 0.204 was sufficient to get the unit tests to pass. So
+    // for safety, it is set to 0.5.
+    double outerRadius = HoleRadius + Width + 0.5;
+
+    ExpandRect(ref x1, ref z1, ref x2, ref z2,
+               (int)(HoleRadius * Math.Cos(endRadians)),
+               (int)(HoleRadius * Math.Sin(endRadians)));
+    ExpandRect(ref x1, ref z1, ref x2, ref z2,
+               (int)(outerRadius * Math.Cos(startRadians)),
+               (int)(outerRadius * Math.Sin(startRadians)));
+    ExpandRect(ref x1, ref z1, ref x2, ref z2,
+               (int)(outerRadius * Math.Cos(endRadians)),
+               (int)(outerRadius * Math.Sin(endRadians)));
+
+    if (endRadians > Math.Tau) {
+      // The section crosses the positive x axis.
+      x2 = int.Max(x2, (int)outerRadius);
+    }
+    if (startRadians < Math.Tau / 4 && endRadians > Math.Tau / 4) {
+      // The section crosses the positive z axis.
+      z2 = int.Max(z2, (int)outerRadius);
+    }
+    if (startRadians < Math.PI && endRadians > Math.PI) {
+      // The section crosses the negative x axis.
+      x1 = int.Min(x1, (int)outerRadius);
+    }
+    if (startRadians < Math.Tau * 3 / 4 && endRadians > Math.Tau * 3 / 4) {
+      // The section crosses the negative z axis.
+      z1 = int.Min(z1, (int)outerRadius);
+    }
+
+    return new Rectanglei(x1 + centerX, z1 + centerZ, x2 - x1, z2 - z1);
+  }
+
+  public void TraversePlotMapChunks(int centerX, int centerZ, int plot,
+                                    Action<int, int, Rectanglei> onChunk) {
+    Rectanglei rect = GetPlotBoundingBox(centerX, centerZ, plot);
+    for (int z = rect.Y1 / GlobalConstants.ChunkSize;
+         z <= rect.Y2 / GlobalConstants.ChunkSize; ++z) {
+      for (int x = rect.X1 / GlobalConstants.ChunkSize;
+           x <= rect.X2 / GlobalConstants.ChunkSize; ++x) {
+        onChunk(x, z, rect);
+      }
+    }
+  }
+
+  /// <summary>
+  /// Expands the rectangle to include another point
+  /// </summary>
+  /// <param name="x1">lower x bound of the rectangle</param>
+  /// <param name="z1">lower z bound of the rectangle</param>
+  /// <param name="x2">upper x bound of the rectangle (this is included)</param>
+  /// <param name="z2">upper z bound of the rectangle (this is included)</param>
+  /// <param name="x">new x value to add to the rectangle</param>
+  /// <param name="z">new z value to add to the rectangle</param>
+  private static void ExpandRect(ref int x1, ref int z1, ref int x2, ref int z2,
+                                 int x, int z) {
+    x1 = Math.Min(x1, x);
+    z1 = Math.Min(z1, z);
+    x2 = Math.Max(x2, x);
+    z2 = Math.Max(z2, z);
   }
 }

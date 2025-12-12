@@ -1,5 +1,6 @@
 using PrefixClassName.MsTest;
 
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 
@@ -68,5 +69,69 @@ public class PlotRing {
     double plotBlocks = ringArea / numPlots;
     Assert.IsGreaterThanOrEqualTo(expectedBlocksPerPlot, plotBlocks);
     Assert.IsLessThan(expectedBlocksPerPlot * 2, plotBlocks);
+  }
+
+  private static void VerifyPlotBoundingBox(Real.Haven haven,
+                                            Real.PlotRing ring, int plot) {
+    BlockPos center = haven.GetIntersection().Center;
+    Rectanglei box = ring.GetPlotBoundingBox(center.X, center.Z, plot);
+    int x1 = int.MaxValue;
+    int z1 = int.MaxValue;
+    int x2 = int.MinValue;
+    int z2 = int.MinValue;
+    for (int z = box.Y1 - 2; z < box.Y2 + 2; ++z) {
+      for (int x = box.X1 - 2; x < box.X2 + 2; ++x) {
+        (Real.PlotRing foundRing, int foundPlot) = haven.GetPlot(
+            new BlockPos(x, center.Y, z, center.dimension), 10, 10);
+        if (foundPlot == plot) {
+          Assert.IsGreaterThanOrEqualTo(box.X1, x, "x");
+          Assert.IsGreaterThanOrEqualTo(box.Y1, z, "z");
+          Assert.IsLessThanOrEqualTo(box.X2, x, "x");
+          Assert.IsLessThanOrEqualTo(box.Y2, z, "z");
+          x1 = int.Min(x1, x);
+          z1 = int.Min(z1, z);
+          x2 = int.Max(x2, x);
+          z2 = int.Max(z2, z);
+        }
+      }
+    }
+    Assert.IsLessThan(3, x1 - box.X1);
+    Assert.IsLessThan(3, z1 - box.Y1);
+    Assert.IsLessThan(3, box.X2 - x2);
+    Assert.IsLessThan(3, box.Y2 - z2);
+  }
+
+  [TestMethod]
+  public void GetPlotBoundingBoxNormalSize() {
+    Real.HavenRegionIntersection intersection =
+        new() { Center = new BlockPos(100, 100, 100, Dimensions.NormalWorld),
+                Radius = 30, ResourceZoneRadius = 10, SafeZoneRadius = 10 };
+    Real.Haven haven = new(intersection, 2, 10);
+    (Real.PlotRing ring, int firstPlot) = haven.GetPlot(
+        intersection.Center.EastCopy(intersection.ResourceZoneRadius + 1), 10,
+        10);
+    Assert.IsNotNull(ring);
+    Assert.AreEqual(0, firstPlot);
+    for (int i = 0; i < ring.Plots.Length; ++i) {
+      VerifyPlotBoundingBox(haven, ring, i);
+    }
+  }
+
+  [TestMethod]
+  public void GetPlotBoundingBoxManyPlots() {
+    Real.HavenRegionIntersection intersection =
+        new() { Center = new BlockPos(100, 100, 100, Dimensions.NormalWorld),
+                Radius = 100, ResourceZoneRadius = 30, SafeZoneRadius = 30 };
+    for (int w = 10; w < 50; ++w) {
+      Real.Haven haven = new(intersection, 0, w);
+      (Real.PlotRing ring, int firstPlot) = haven.GetPlot(
+          intersection.Center.EastCopy(intersection.ResourceZoneRadius + 1), 10,
+          10);
+      Assert.IsNotNull(ring);
+      Assert.AreEqual(0, firstPlot);
+      for (int i = 0; i < ring.Plots.Length; ++i) {
+        VerifyPlotBoundingBox(haven, ring, i);
+      }
+    }
   }
 }
