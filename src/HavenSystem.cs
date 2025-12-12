@@ -636,7 +636,7 @@ public class HavenSystem : ModSystem {
           haven.GetPlot(position, ServerConfig.HavenBelowHeight,
                         ServerConfig.HavenAboveHeight);
       if (ring != null) {
-        if (plot > 0) {
+        if (plot >= 0) {
           // For owned plots, only allow placement by the owner of the plot.
           if (ring.Plots[plot].OwnerUID == player.PlayerUID) {
             return null;
@@ -680,7 +680,7 @@ public class HavenSystem : ModSystem {
           haven.GetPlot(position, ServerConfig.HavenBelowHeight,
                         ServerConfig.HavenAboveHeight);
       if (ring != null) {
-        if (plot > 0) {
+        if (plot >= 0) {
           if (ring.Plots[plot].OwnerUID == player.PlayerUID) {
             return null;
           } else if (ring.Plots[plot].OwnerUID != null) {
