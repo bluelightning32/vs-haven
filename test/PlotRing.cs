@@ -83,6 +83,8 @@ public class PlotRing {
       for (int x = box.X1 - 2; x < box.X2 + 2; ++x) {
         (Real.PlotRing foundRing, int foundPlot) = haven.GetPlot(
             new BlockPos(x, center.Y, z, center.dimension), 10, 10);
+        Assert.AreEqual(foundPlot == plot,
+                        ring.IsInPlot(center.X, center.Z, plot, x, z));
         if (foundPlot == plot) {
           Assert.IsGreaterThanOrEqualTo(box.X1, x, "x");
           Assert.IsGreaterThanOrEqualTo(box.Y1, z, "z");

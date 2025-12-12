@@ -246,4 +246,19 @@ public class PlotRing {
     x2 = Math.Max(x2, x);
     z2 = Math.Max(z2, z);
   }
+
+  public bool IsInPlot(int centerX, int centerZ, int plot, int plotX,
+                       int plotZ) {
+    int dx = plotX - centerX;
+    int dz = plotZ - centerZ;
+    int distSq = dx * dx + dz * dz;
+    if (distSq <= HoleRadius * HoleRadius) {
+      return false;
+    }
+    if (distSq > (HoleRadius + Width) * (HoleRadius + Width)) {
+      return false;
+    }
+    double radians = Math.Atan2(dz, dx);
+    return GetOwnerIndex(radians) == plot;
+  }
 }
