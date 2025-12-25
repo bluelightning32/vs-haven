@@ -25,7 +25,8 @@ public class Plot {
     if (obj is not Plot other) {
       return false;
     }
-    return OwnerUID == other.OwnerUID && OwnerName == other.OwnerName && FormerOwnerUID == other.FormerOwnerUID && ChestPos == other.ChestPos;
+    return OwnerUID == other.OwnerUID && OwnerName == other.OwnerName &&
+           FormerOwnerUID == other.FormerOwnerUID && ChestPos == other.ChestPos;
   }
 
   public override int GetHashCode() {
@@ -172,12 +173,16 @@ public class PlotRing {
     plot.FormerOwnerUID = plot.OwnerUID;
     plot.OwnerUID = null;
     if (plot.ChestPos != null) {
-      // Do not call accessor.BreakBlock, because that drops the chest itself along with the chest contents.
+      // Do not call accessor.BreakBlock, because that drops the chest itself
+      // along with the chest contents.
       BlockEntity entity = accessor.GetBlockEntity(plot.ChestPos);
       if (entity is IBlockEntityContainer container) {
-        container.DropContents(new Vec3d(plot.ChestPos.X, plot.ChestPos.Y + 1, plot.ChestPos.Z));
+        container.DropContents(
+            new Vec3d(plot.ChestPos.X, plot.ChestPos.Y + 1, plot.ChestPos.Z));
       } else {
-        HavenSystem.Logger.Error("Plot chest is missing IBlockEntityContainer {0} {1}.", plot.ChestPos);
+        HavenSystem.Logger.Error(
+            "Plot chest is missing IBlockEntityContainer {0} {1}.",
+            plot.ChestPos);
       }
       accessor.SetBlock(0, plot.ChestPos);
       plot.ChestPos = null;
@@ -185,7 +190,8 @@ public class PlotRing {
     return null;
   }
 
-  public string UnclaimPlot(IBlockAccessor accessor, int index, string playerUID) {
+  public string UnclaimPlot(IBlockAccessor accessor, int index,
+                            string playerUID) {
     if (index < 0) {
       return "haven:cannot-unclaim-border";
     }
@@ -330,7 +336,8 @@ public class PlotRing {
     TraversePlotMapChunks(centerX, centerZ, plot, ProcessChunk);
   }
 
-  public bool CreateChest(ITerrainHeightReader reader, IWorldAccessor world, BlockPos havenCenter, int plotIndex) {
+  public bool CreateChest(ITerrainHeightReader reader, IWorldAccessor world,
+                          BlockPos havenCenter, int plotIndex) {
     Plot plot = Plots[plotIndex];
     if (plot.OwnerUID == null) {
       return false;
@@ -338,16 +345,19 @@ public class PlotRing {
     if (plot.ChestPos != null) {
       return false;
     }
-    // The first plot starts at 0 radians and extends to PlotRadians, followed by BorderRadians before the next plot.
+    // The first plot starts at 0 radians and extends to PlotRadians, followed
+    // by BorderRadians before the next plot.
     double startRadians = plotIndex * (BorderRadians + PlotRadians);
     double midRadians = startRadians + PlotRadians / 2;
     // Place the chest right next to the inner ring.
     double radius = HoleRadius + 2;
     int x = havenCenter.X + (int)(Math.Cos(midRadians) * radius);
     int z = havenCenter.Z + (int)(Math.Sin(midRadians) * radius);
-    // GetHeight returns the coordinate of the surface block. The chest is placed above the surface block.
+    // GetHeight returns the coordinate of the surface block. The chest is
+    // placed above the surface block.
     int y = reader.GetHeight(world.BlockAccessor, new Vec2i(x, z)) + 1;
-    Block labeledChest = world.GetBlock(AssetLocation.Create("labeledchest-east"));
+    Block labeledChest =
+        world.GetBlock(AssetLocation.Create("labeledchest-east"));
     BlockPos chestPos = new BlockPos(x, y, z, havenCenter.dimension);
     world.BlockAccessor.SetBlock(labeledChest.Id, chestPos);
     BlockEntity entity = world.BlockAccessor.GetBlockEntity(chestPos);
@@ -355,7 +365,9 @@ public class PlotRing {
     entity.ToTreeAttributes(tree);
     string oldText = tree.GetString("text");
     if (oldText != "") {
-      HavenSystem.Logger.Error("Expected newly created plot chest to have empty text, but instead it has {0}", oldText);
+      HavenSystem.Logger.Error("Expected newly created plot chest to have " +
+                               "empty text, but instead it has {0}",
+                               oldText);
       return false;
     }
     tree.SetInt("color", ColorUtil.ToRgba(255, 50, 0, 100));

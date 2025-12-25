@@ -12,6 +12,8 @@
   "haven:block-tallplant-papyrus-*-free": "Papyrus dispenser",
   "haven:block-setspawn-*": "Respawn point",
 
+  "haven:blockhelp-set-spawn": "Set spawn point",
+
   // Triggered when a player tries to place a block in the haven.
   "game:ingameerror-noprivilege-buildbreak-haven": "This ground is protected by a haven.",
   "game:ingameerror-noprivilege-buildbreak-haven-plot-owned": "This plot is owned by someone else.",

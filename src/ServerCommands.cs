@@ -64,12 +64,14 @@ public class ServerCommands {
         .WithArgs(parsers.OptionalWord("all"))
         .EndSub()
         .BeginSub("adminunclaim")
-        .WithDesc("Unclaim the plot at the block selection, even if you are not the owner.")
+        .WithDesc("Unclaim the plot at the block selection, even if you are " +
+                  "not the owner.")
         .RequiresPrivilege("worldedit")
         .HandleWith(AdminUnclaimPlot)
         .EndSub()
         .BeginSub("adminclaim")
-        .WithDesc("Claim the plot at the block selection on behalf of someone else.")
+        .WithDesc(
+            "Claim the plot at the block selection on behalf of someone else.")
         .RequiresPrivilege("worldedit")
         .WithArgs(parsers.Word("username"), parsers.Word("uid"))
         .HandleWith(AdminClaimPlot)
@@ -192,7 +194,8 @@ public class ServerCommands {
 
     bool all = (args.Parsers[0].IsMissing ? "" : args[0] as string) == "all";
 
-    if (!_system.UnclaimPlot(pos, langCode, args.Caller.Player.PlayerUID, all, out string message)) {
+    if (!_system.UnclaimPlot(pos, langCode, args.Caller.Player.PlayerUID, all,
+                             out string message)) {
       return TextCommandResult.Error(message);
     }
     return TextCommandResult.Success(message);
@@ -220,8 +223,7 @@ public class ServerCommands {
       return TextCommandResult.Error("Cannot read block selection.");
     }
     string error =
-        _system.ClaimPlot(pos, langCode, args[1] as string,
-                          args[0] as string);
+        _system.ClaimPlot(pos, langCode, args[1] as string, args[0] as string);
     if (error != null) {
       return TextCommandResult.Error(error);
     }

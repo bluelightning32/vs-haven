@@ -7,6 +7,9 @@
 		{
       name: "OmniAttachable"
     },
+    {
+      name: "SetSpawn"
+    },
   ],
 	creativeinventory: { "general": ["*-up"], "construction": ["*-up"] },
 	shape: {
