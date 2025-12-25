@@ -1,0 +1,98 @@
+{
+  code: "setspawn",
+	variantgroups: [
+		{ code:"orientation", loadFromPropertiesCombine: ["abstract/horizontalorientation", "abstract/verticalorientation"] }
+	],
+  behaviors: [
+		{
+      name: "OmniAttachable"
+    },
+  ],
+	creativeinventory: { "general": ["*-up"], "construction": ["*-up"] },
+	shape: {
+    base: "block/gear-anchor",
+    overlays: [
+      {
+        base: "game:item/gear-temporal",
+        offsetYByType: {
+          "*-up": 0.125,
+          "*-down": -0.125
+        },
+        offsetXByType: {
+          "*-east": 0.125,
+          "*-west": -0.125
+        },
+        offsetZByType: {
+          "*-north": -0.125,
+          "*-south": 0.125
+        },
+        rotateXByType: {
+          "*-up": 0,
+          "*-down": 180,
+          "*-north": 90,
+          "*-east": 90,
+          "*-south": 90,
+          "*-west": 90
+        },
+        rotateZByType: {
+          "*-up": 0,
+          "*-down": 0,
+          "*-north": 180,
+          "*-east": 270,
+          "*-south": 0,
+          "*-west": 90
+        }
+      }
+    ],
+    rotateXByType: {
+      "*-up": 0,
+      "*-down": 180,
+		  "*-north": 90,
+		  "*-east": 90,
+		  "*-south": 90,
+		  "*-west": 90
+    },
+    rotateZByType: {
+      "*-up": 0,
+      "*-down": 0,
+      "*-north": 180,
+      "*-east": 270,
+      "*-south": 0,
+      "*-west": 90
+    }
+  },
+  textures: {
+    "temporal": { base: "game:item/resource/temporalgear" },
+  },
+	collisionSelectionBox: {
+	  x1: 0.125, y1: 0, z1: 0.125, x2: 0.875, y2: 0.200, z2: 0.875,
+    rotateXByType: {
+      "*-up": 0,
+      "*-down": 180,
+		  "*-north": 90,
+		  "*-east": 90,
+		  "*-south": 90,
+		  "*-west": 90
+    },
+    rotateZByType: {
+      "*-up": 0,
+      "*-down": 0,
+      "*-north": 180,
+      "*-east": 270,
+      "*-south": 0,
+      "*-west": 90
+    }
+  },
+  blockmaterial: "Metal",
+	drawtype: "json",
+	replaceable: 160,
+	resistance: 4,
+	lightAbsorption: 0,
+	sidesolid: { all: false },
+	sideopaque: { all: false },
+	sounds: {
+		"place": "block/heavymetal-hit",
+		"break": "block/heavymetal-hit",
+		"hit": "block/heavymetal-hit"
+	}
+}
