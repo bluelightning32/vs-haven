@@ -2,7 +2,7 @@
 	"type": "code",
 	"name": "Haven",
 	"modid": "haven",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	
 	"description" : "Safe haven where the basic player needs are met until they are ready to venture forth.",
 	"website": "https://github.com/bluelightning32/vs-haven",

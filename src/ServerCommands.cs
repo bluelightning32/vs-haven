@@ -79,9 +79,10 @@ public class ServerCommands {
   }
 
   private TextCommandResult CreateHaven(TextCommandCallingArgs args) {
-    BlockPos center = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos center = args.Caller.Player?.CurrentBlockSelection?.Position;
     if (center == null) {
-      return TextCommandResult.Error("Cannot read block selection.");
+      return TextCommandResult.Error(
+          "Must point at the center block for the new haven.");
     }
     if (_system.GenerateHaven(center)) {
       return TextCommandResult.Success(
@@ -103,7 +104,7 @@ public class ServerCommands {
 
   private TextCommandResult ShowHavens(TextCommandCallingArgs args) {
     StringBuilder builder = new();
-    BlockPos selection = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos selection = args.Caller.Player?.CurrentBlockSelection?.Position;
     if (selection != null) {
       builder.AppendLine("Haven at block selection:");
       Haven haven = _system.GetHaven(selection);
@@ -131,7 +132,7 @@ public class ServerCommands {
   }
 
   private TextCommandResult RegisterHaven(TextCommandCallingArgs args) {
-    BlockPos center = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos center = args.Caller.Player?.CurrentBlockSelection?.Position;
     if (center == null) {
       return TextCommandResult.Error("Cannot read block selection.");
     }
@@ -147,7 +148,7 @@ public class ServerCommands {
   }
 
   private TextCommandResult UnregisterHaven(TextCommandCallingArgs args) {
-    BlockPos center = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos center = args.Caller.Player?.CurrentBlockSelection?.Position;
     if (center == null) {
       return TextCommandResult.Error("Cannot read block selection.");
     }
@@ -169,7 +170,7 @@ public class ServerCommands {
   }
 
   private TextCommandResult ClaimPlot(TextCommandCallingArgs args) {
-    BlockPos pos = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos pos = args.Caller.Player?.CurrentBlockSelection?.Position;
     string langCode = (args.Caller.Player as IServerPlayer)?.LanguageCode ?? "";
 
     if (pos == null) {
@@ -185,7 +186,7 @@ public class ServerCommands {
   }
 
   private TextCommandResult UnclaimPlot(TextCommandCallingArgs args) {
-    BlockPos pos = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos pos = args.Caller.Player?.CurrentBlockSelection?.Position;
     string langCode = (args.Caller.Player as IServerPlayer)?.LanguageCode ?? "";
 
     if (pos == null) {
@@ -202,7 +203,7 @@ public class ServerCommands {
   }
 
   private TextCommandResult AdminUnclaimPlot(TextCommandCallingArgs args) {
-    BlockPos pos = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos pos = args.Caller.Player?.CurrentBlockSelection?.Position;
     string langCode = (args.Caller.Player as IServerPlayer)?.LanguageCode ?? "";
 
     if (pos == null) {
@@ -216,7 +217,7 @@ public class ServerCommands {
   }
 
   private TextCommandResult AdminClaimPlot(TextCommandCallingArgs args) {
-    BlockPos pos = args.Caller.Player?.CurrentBlockSelection.Position;
+    BlockPos pos = args.Caller.Player?.CurrentBlockSelection?.Position;
     string langCode = (args.Caller.Player as IServerPlayer)?.LanguageCode ?? "";
 
     if (pos == null) {

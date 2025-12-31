@@ -366,7 +366,7 @@ public class PlotRing {
     string oldText = tree.GetString("text");
     if (oldText != "") {
       HavenSystem.Logger.Error("Expected newly created plot chest to have " +
-                               "empty text, but instead it has {0}",
+                                   "empty text, but instead it has {0}",
                                oldText);
       return false;
     }

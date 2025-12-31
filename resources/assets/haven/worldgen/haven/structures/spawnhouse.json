@@ -1,0 +1,12 @@
+{
+  code: "spawnhouse",
+  schematics: {
+    "spawnhouse": {
+      schematic: "spawnhouse",
+      offsetY: -2
+    }
+  },
+  count: {
+    avg: 1
+  }
+}
